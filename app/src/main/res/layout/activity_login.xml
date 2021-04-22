@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
 
         android:layout_height="match_parent"
-        android:visibility="visible">
+        android:visibility="gone">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -68,17 +68,42 @@
                     app:backgroundTint="#868786" />
 
                 <Button
+                    android:id="@+id/showlog"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_below="@id/center_layout"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginRight="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/jeton2"
+                    android:fontFamily="@font/font2"
+                    android:text="Показать\nлог"
+                    android:textColor="#A1000000"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="visible"
+                    app:backgroundTint="#00FFFFFF"
+                    app:backgroundTintMode="screen" />
+
+                <Button
                     android:id="@+id/send"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginLeft="-5dp"
-                    android:layout_marginTop="40dp"
-                    android:layout_marginRight="5dp"
-                    android:gravity="center|center_horizontal|center_vertical"
-                    android:text="Очистить и перезапустить"
-                    android:textSize="10sp"
-                    app:backgroundTint="#6E6E6E" />
+                    android:layout_height="50dp"
+                    android:layout_below="@id/center_layout"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginRight="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/jeton2"
+                    android:fontFamily="@font/font2"
+                    android:text="Выйти из \nсистемы"
+                    android:textColor="#A1000000"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="visible"
+                    app:backgroundTint="#00FFFFFF"
+                    app:backgroundTintMode="screen" />
             </LinearLayout>
 
         </LinearLayout>
@@ -155,5 +180,139 @@
         android:visibility="visible"
         app:backgroundTint="#00FFFFFF"
         app:backgroundTintMode="screen" />
+
+    <Button
+        android:id="@+id/showMap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/new_login"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/jeton2"
+        android:fontFamily="@font/font2"
+        android:rotation="-10"
+        android:text="Показать \n карту"
+        android:textColor="#A1000000"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="visible"
+        app:backgroundTint="#00FFFFFF"
+        app:backgroundTintMode="screen" />
+
+    <RelativeLayout
+        android:id="@+id/RL2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="60dp"
+        android:background="@drawable/listback"
+        android:visibility="gone">
+
+        <ListView
+            android:id="@+id/genlist"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/LL4"
+            android:layout_marginTop="50dp"
+            android:layout_marginRight="30dp">
+
+        </ListView>
+
+        <LinearLayout
+            android:id="@+id/LL4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="50dp"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/closeLog"
+                android:layout_width="100dp"
+                android:layout_height="50dp"
+                android:layout_below="@id/center_layout"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/jeton2"
+                android:fontFamily="@font/font2"
+                android:text="Закрыть\nлог"
+                android:textColor="#A1000000"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="visible"
+                app:backgroundTint="#00FFFFFF"
+                app:backgroundTintMode="screen" />
+        </LinearLayout>
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:id="@+id/maplayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <fragment
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+
+        <Button
+            android:id="@+id/request_location_updates_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/request_location_updates"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/remove_location_updates_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/request_location_updates_button"
+            android:text="@string/remove_location_updates"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/panel"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="5dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/cenmap"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/mapmenu" />
+
+            <ImageView
+                android:id="@+id/finger"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_weight="1"
+                app:tint="#F1EEEE"
+                android:visibility="visible"
+                app:srcCompat="@drawable/finger" />
+
+            <ImageView
+                android:id="@+id/backs"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                app:tint="#FFFFFF"
+                app:srcCompat="@drawable/rightarrow" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
 
 </RelativeLayout>

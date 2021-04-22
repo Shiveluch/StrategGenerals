@@ -47,6 +47,11 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation 'com.embarkmobile:zxing-android-minimal:2.0.0@aar'
     implementation 'com.embarkmobile:zxing-android-integration:2.0.0@aar'
+    implementation 'com.google.android.gms:play-services-maps:17.0.0'
     implementation 'com.google.zxing:core:3.3.0'
+    implementation 'com.google.android.gms:play-services-location:18.0.0'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'com.google.android.material:material:1.1.0-alpha09'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
 
 }

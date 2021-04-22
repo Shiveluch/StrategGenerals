@@ -9,4 +9,17 @@
 
     <string name="hello_first_fragment">Hello first fragment</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+
+    <string name="launch_activity">Запуск приложения</string>
+    <string name="location_unknown">Координаты не определены</string>
+    <string name="location_updates_label">Обновление...</string>
+
+    <string name="permission_rationale">Требуется разрешение на определение местонахождения</string>
+    <string name="permission_denied_explanation">Требуется разрешение на определение местонахождения.</string>
+    <string name="settings">Настройки</string>
+    <string name="ok">OK</string>
+    <string name="request_location_updates">Определение местоположения</string>
+    <string name="remove_location_updates">Остановить определение местоположения</string>
+
+    <string name="location_updated">Определено: %1$s</string>
 </resources>
