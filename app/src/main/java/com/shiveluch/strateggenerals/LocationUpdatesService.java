@@ -13,6 +13,7 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -32,9 +33,22 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
+
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -72,9 +86,10 @@ public class LocationUpdatesService extends Service {
             ".started_from_notification";
     SharedPreferences mSettings;
     public static final String APP_PREFERENCES = "mysettings";//filename
+    public static final String APP_PREFERENCES_PASSWORD = "Password";//player's system password
 
     private final IBinder mBinder = new LocalBinder();
-
+String addcoord="http://gamestrateg.ru/generals/update_coord.php";
     /**
      * The desired interval for location updates. Inexact. Updates may be more or less frequent.
      */
@@ -323,6 +338,14 @@ public class LocationUpdatesService extends Service {
         mLocation = location;
         double lat=mLocation.getLatitude();
         double lon=mLocation.getLongitude();
+        Log.d ("pass",mSettings.getString(APP_PREFERENCES_PASSWORD,"0"));
+        String curPass=mSettings.getString(APP_PREFERENCES_PASSWORD,"0");
+        if  (curPass.length()>4) {
+            addcoord="http://gamestrateg.ru/generals/update_coord.php/get.php?lat="+(""+lat)
+                    + "&lon="+(""+lon)+"&qpass="+curPass;
+            new AddAsyncTask().execute(curPass, "" + lat, "" + lon);
+
+        }
        //loc.replace("f"," ");
          //String str[] = loc.split("h");
          // String finalString = str[1];
@@ -389,5 +412,39 @@ public class LocationUpdatesService extends Service {
             }
         }
         return false;
+    }
+
+    private class AddAsyncTask extends AsyncTask<String, Integer, Double> {
+        @Override
+        protected Double doInBackground(String... params) {
+            postData(params[0],params[1],params[2]);
+            return null;
+        }
+
+        protected void onPostExecute(Double result) {
+
+        }
+
+        protected void onProgressUpdate(Integer... progress) {
+        }
+
+        public void postData(String genpass, String genlat, String genlon) {
+            HttpClient httpclient = new DefaultHttpClient();
+            HttpPost httppost = new HttpPost(addcoord);
+            Log.d("StartUpload", ""+genpass+", "+genlat+", "+genlon);
+            //Toast.makeText(getApplicationContext(),""+info+", "+code,Toast.LENGTH_LONG).show();
+            try {
+                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+                nameValuePairs.add(new BasicNameValuePair("genpass",genpass ));
+                nameValuePairs.add(new BasicNameValuePair("genlat",genlat ));
+                nameValuePairs.add(new BasicNameValuePair("genlon",genlon ));
+                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
+                HttpResponse response = httpclient.execute(httppost);
+            } catch (ClientProtocolException e) {
+
+            } catch (IOException e) {
+            }
+
+        }
     }
 }
