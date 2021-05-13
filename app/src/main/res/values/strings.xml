@@ -17,9 +17,11 @@
     <string name="permission_rationale">Требуется разрешение на определение местонахождения</string>
     <string name="permission_denied_explanation">Требуется разрешение на определение местонахождения.</string>
     <string name="settings">Настройки</string>
+
     <string name="ok">OK</string>
     <string name="request_location_updates">Определение местоположения</string>
     <string name="remove_location_updates">Остановить определение местоположения</string>
+    <string name="control">1.04</string>
 
     <string name="location_updated">Определено: %1$s</string>
 </resources>

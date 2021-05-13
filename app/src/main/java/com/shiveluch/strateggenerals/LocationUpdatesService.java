@@ -339,7 +339,6 @@ String addcoord="http://gamestrateg.ru/generals/update_coord.php";
         mLocation = location;
         double lat=mLocation.getLatitude();
         double lon=mLocation.getLongitude();
-        Log.d ("pass",mSettings.getString(APP_PREFERENCES_PASSWORD,"0"));
         String curPass=mSettings.getString(APP_PREFERENCES_PASSWORD,"0");
         if  (curPass.length()>4) {
             addcoord="http://gamestrateg.ru/generals/update_coord.php/get.php?lat="+(""+lat)
@@ -364,7 +363,6 @@ String addcoord="http://gamestrateg.ru/generals/update_coord.php";
 //
 //        long currentTime = System.currentTimeMillis();
 //        String time=timeFormat.format(currentTime);
-        Log.d(TAG, ""+lat+","+lon);
         // Notify anyone listening for broadcasts about the new location.
         Intent intent = new Intent(ACTION_BROADCAST);
         intent.putExtra(EXTRA_LOCATION, location);
@@ -432,7 +430,6 @@ String addcoord="http://gamestrateg.ru/generals/update_coord.php";
         public void postData(String genpass, String genlat, String genlon) {
             HttpClient httpclient = new DefaultHttpClient();
             HttpPost httppost = new HttpPost(addcoord);
-            Log.d("StartUpload", ""+genpass+", "+genlat+", "+genlon);
             //Toast.makeText(getApplicationContext(),""+info+", "+code,Toast.LENGTH_LONG).show();
             try {
                 List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);

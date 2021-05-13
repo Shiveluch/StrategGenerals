@@ -18,7 +18,9 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
@@ -32,6 +34,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.telephony.mbms.StreamingServiceInfo;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -59,6 +62,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.zxing.client.android.Intents;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
@@ -80,6 +84,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -87,6 +93,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -94,24 +101,28 @@ import static android.view.View.GONE;
 
 
 public class Login extends AppCompatActivity implements OnMapReadyCallback {
-    String sbname = "http://gamestrateg.ru/generals/get_generals.php";
+    String sbname;
     String codenames="http://gamestrateg.ru/generals/get_codes.php";
     String getcodes="http://gamestrateg.ru/generals/get_gps_points.php";
     String addtolog="http://gamestrateg.ru/generals/add_tolog.php";
-    String getcodesFormarkers="http://gamestrateg.ru/generals/get_gps_points.php";
-    String clear_gen="http://gamestrateg.ru/generals/clear_generals.php";
     String add_taken="http://gamestrateg.ru/generals/add_takens.php";
     String getTaken="http://gamestrateg.ru/generals/get_taken.php";
+    String matter="";
     String getLastfromLog="";
+    String isMarker;
     String getTime="";
+    String getControl="http://gamestrateg.ru/generals/get_control.php";
     float mapzoom=13.835042f;
     String updateOwner="http://gamestrateg.ru/generals/update_owner.php";
     String removeOld="http://gamestrateg.ru/generals/remove_old_takens.php";
     String getEvents="http://gamestrateg.ru/generals/get_events.php";
     String getLast="";
+    String getCount="";
+    String publicate="";
     String getSize="http://gamestrateg.ru/generals/get_points_size.php";
 String message="";
 String takePass="";
+String killStatus="";
 String updateStatus="";
 String lastDate;
 boolean showlist=false;
@@ -146,8 +157,11 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
     public static final String APP_IS_LOGIN="isLogin";
     public static final String APP_TO_BASA="toBasa";
     public static final String APP_STATUS="status";
+    public static final String APP_PUBLIC="public";
     public static final String APP_NICKNAME="Nickname";
     public static final String APP_IS_ONLINE="isOnline";
+    public static final String APP_IS_CONTROL="Control";
+    public static final String APP_IS_UNIQKEY="Uniqkey";
 
     Marker [] markers=new Marker[50];
     String genName;
@@ -242,6 +256,7 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
     protected void onResume() {
         super.onResume();
         getJSON(getSize);
+        isMarker=(mSettings.getString(APP_TO_BASA,"")).replace('#','.');
         uploadInfo();
       //  getMarkers();
         //markers
@@ -259,6 +274,7 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 123);
         }
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
         context = getApplicationContext();
         mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -269,8 +285,11 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
                 requestPermissions();
             }
         }
-        first_login = findViewById(R.id.first_login);
+       // getJSON(getControl);
 
+        first_login = findViewById(R.id.first_login);
+        String thiskey=getString(R.string.settings);
+        String coordLog=getCoordinates(getString(R.string.coordkey),thiskey);
         genname=findViewById(R.id.generalname);
         RL2=findViewById(R.id.RL2);
         coordtext=findViewById(R.id.coordtext);
@@ -304,27 +323,48 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
         list=findViewById(R.id.list);
         QR=findViewById(R.id.qr);
         mSettings = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
-        getJSON(getcodes);
+        int controls=Integer.parseInt(mSettings.getString(APP_IS_CONTROL,"0"));
+
+        if (controls==0) {getJSON(getControl);}
+
+        removeMarkers();
         have_pass = mSettings.getString(APP_PREFERENCES_PASSWORD, "");
         String info = mSettings.getString(APP_PREFERENCES_INFO, "");
-
         String points=mSettings.getString(APP_PREFERENCES_CODES,"");
         String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
+        Log.d ("check","Check is "+idcheck);
+        String isCheck=mSettings.getString(APP_TO_BASA,"");
         String isLogin=mSettings.getString(APP_IS_LOGIN,"0");
         String gencheck=mSettings.getString(APP_PREFERENCES_GENERAL,"");
         String nick=mSettings.getString(APP_NICKNAME,"");
+        String uniqKey=mSettings.getString(APP_IS_UNIQKEY,"");
+
         SharedPreferences.Editor createEdit=mSettings.edit();
         createEdit.putString(APP_IS_ONLINE,"0");
+        createEdit.putString(APP_TO_BASA,coordLog);
         createEdit.apply();
+        if (uniqKey.length()<4) {
+            String isKey="";
+            for (int i = 0; i < 6; i++) {
+                Random rnd = new Random();
+                int pos = rnd.nextInt(32);
+                isKey=isKey+alpha.charAt(pos);
+            }
+            createEdit.putString(APP_IS_UNIQKEY,isKey);
+            createEdit.apply();
+
+        }
+
         toppanel.setVisibility(GONE);
 
         mTimer = new Timer();
         myTimerTask = new MyTimerTask();
         mTimer.schedule(myTimerTask, 1000,4000);
-
+        getJSON(getControl);
         selflog.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                invLog();
                 showlist=!showlist;
                 if (showlist) RLList.setVisibility(View.VISIBLE);
                 if (!showlist) RLList.setVisibility(View.GONE);
@@ -368,8 +408,14 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
 finger.setOnClickListener(new View.OnClickListener() {
     @Override
     public void onClick(View v) {
+        invLog();
+//        matter="http://gamestrateg.ru/generals/test_update.php";
+//        String cur=mSettings.getString(APP_PREFERENCES_PASSWORD,"");
+//        new testAsyncTask().execute("matter", cur);
+
+
+
         float getZoom=mMap.getCameraPosition().zoom;
-        Log.d ("zoom", "Zoom is "+getZoom);
 
        if (imhere!=null) imhere.remove();
         LatLng position=new LatLng(commonLat,commonLon);
@@ -391,8 +437,10 @@ finger.setOnClickListener(new View.OnClickListener() {
     }
 });
         cenmap.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
+                invLog();
                 float getZoom=mMap.getCameraPosition().zoom;
 
                 CameraPosition cameraPosition = new CameraPosition.Builder()
@@ -424,12 +472,14 @@ finger.setOnClickListener(new View.OnClickListener() {
                     e.printStackTrace();
                 }
                 startRL.setVisibility(GONE);
+                getMarkers();
                 mapview.setVisibility(View.VISIBLE);
             }
         });
         backs.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                invLog();
                 mapview.setVisibility(View.GONE);
                 startRL.setVisibility(View.VISIBLE);
             }
@@ -463,8 +513,8 @@ finger.setOnClickListener(new View.OnClickListener() {
                     String[] finalString = splitinfo[i].split(",");
                     if (finalString.length>1){
                         String toArray =
-                                finalString[1] + " взята " + finalString[3] + " в " + finalString[4];
-                        get.add(toArray);}
+                                finalString[1] + " взята\n" + finalString[3] + " в " + finalString[4];
+                        get.add(0, toArray);}
                     ArrayAdapter adapter = new ArrayAdapter(this,
                             R.layout.list_item, get);
 //
@@ -496,6 +546,7 @@ finger.setOnClickListener(new View.OnClickListener() {
         commonlog.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                invLog();
                 showComonList=!showComonList;
                 if (showComonList) {RLComList.setVisibility(View.VISIBLE);
                     getJSON(getEvents);}
@@ -507,6 +558,7 @@ finger.setOnClickListener(new View.OnClickListener() {
         exit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                invLog();
                 //new ClearAsyncTask().execute(mSettings.getString(APP_PREFERENCES_ID,""));
                showResetDialog();
 
@@ -519,9 +571,11 @@ finger.setOnClickListener(new View.OnClickListener() {
                 if (!checkPermissions()) {
                     requestPermissions();
                 }
+
                 String curLog=first_login.getText().toString();
                 String curPass=first_password.getText().toString();
-                if (curPass.length()>0)
+                getMarkers();
+                if (curPass.length()>0 && curLog.length()>0)
                 {sbname="http://gamestrateg.ru/generals/get_generals.php/get.php?nom="+curPass;
                 SharedPreferences.Editor editor=mSettings.edit();
                     editor.putString(APP_NICKNAME,curLog);
@@ -532,7 +586,7 @@ finger.setOnClickListener(new View.OnClickListener() {
                 }
                 else
                 {
-                    Toast.makeText(getApplicationContext(),"Не введен пароль",Toast.LENGTH_SHORT);
+                    Toast.makeText(getApplicationContext(),"Не введено имя пользователя или пароль",Toast.LENGTH_SHORT);
                 }
 
             }
@@ -541,14 +595,15 @@ finger.setOnClickListener(new View.OnClickListener() {
         QR.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                invLog();
                 getJSON(getTaken);
 
                 IntentIntegrator integrator = new IntentIntegrator(activity);
                 integrator.setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES);
+
                 integrator.setPrompt(" ");
                 integrator.setCameraId(0);
-                integrator.autoWide();
+//                integrator.autoWide();
                 //         integrator.setBeepEnabled(false);
                 //     integrator.setBarcodeImageEnabled(false);
                 try {
@@ -613,8 +668,8 @@ finger.setOnClickListener(new View.OnClickListener() {
 
                         String [] split=convert.split("\\.");
                         int finalDist=Integer.parseInt(split[0]);
-                        if (finalDist>50000000) Toast.makeText(getApplicationContext(),""+currentcode[0]+" не может быть взята, дистанция: "+finalDist + "метров",Toast.LENGTH_LONG).show();
-                        if (finalDist<=50000000)
+                        if (finalDist>50) Toast.makeText(getApplicationContext(),""+currentcode[0]+" не может быть взята, дистанция: "+finalDist + "метров",Toast.LENGTH_LONG).show();
+                        if (finalDist<=50)
                         {
                             // Текущее время
                             Date currentDate = new Date();
@@ -652,11 +707,11 @@ finger.setOnClickListener(new View.OnClickListener() {
                              double isDate=currentDate.getTime();
                              if (isBegin<isDate && isDate<isEnd)
                              {
-                                 Toast.makeText(getApplicationContext(),"Точка взята",Toast.LENGTH_LONG).show();
+                                 Toast.makeText(getApplicationContext(),cPoint+" взята",Toast.LENGTH_LONG).show();
                                  taken=taken+cGen+","+cPoint+","+idPoint+","+datetime+","+cSide+","+cId+"#";
-                                 String inf=cPoint+ " взята " + dateText+ " в " + timeText;
-                                 get.add(inf);
-                                                 ArrayAdapter adapter = new ArrayAdapter(this,
+                                 String inf=cPoint+ " взята\n" + dateText+ " в " + timeText;
+                                 get.add(0,inf);
+                                 ArrayAdapter adapter = new ArrayAdapter(this,
                         R.layout.list_item, get);
 //
                         list.setAdapter(adapter);
@@ -713,8 +768,17 @@ finger.setOnClickListener(new View.OnClickListener() {
                         if (urlWebService==getcodes)
                             loadGpsCodes(s);
 
+                        if (urlWebService==getCount)
+                            loadcount(s);
+
                         if (urlWebService==getLast)
                             loadLast(s);
+
+                        if (urlWebService==getControl)
+                            loadcontrol(s);
+
+                        if (urlWebService==updateStatus)
+                            updateGenStatus(s);
 
                         if (urlWebService==getSize)
                             loadsize(s);
@@ -725,7 +789,7 @@ finger.setOnClickListener(new View.OnClickListener() {
 //                        if (urlWebService==getcodesFormarkers)
 //                            loadGpsCodesForMarkers(s);
 
-                        if (urlWebService==updateStatus)
+                        if (urlWebService==killStatus)
                             updateGenStatus(s);
 
                         if (urlWebService==sbname)
@@ -865,6 +929,7 @@ return;
             }
 
         }
+        getJSON(getControl);
     }
 
     private void toLog(String info) {
@@ -931,9 +996,11 @@ return;
 
 
         String[] upload = mSettings.getString(APP_PREFERENCES_TAKEN, "").split("#");
+        //doCancel("SHA");
         String[] splitting = upload[upload.length - 1].split(",");
         String newDate = splitting[3] + " " + splitting[4];
         String point_id = splitting[2];
+        String curpass=mSettings.getString(APP_PREFERENCES_PASSWORD,"");
         String side = mSettings.getString(APP_PREFERENCES_SIDE, "0");
         String genId = "";
         try {
@@ -1118,6 +1185,111 @@ ArrayList <String> markerlist=new ArrayList<String>();
 //    }
 
 
+    private void loadcontrol(String json) throws JSONException {
+        JSONArray jsonArray = new JSONArray(json);
+        if (jsonArray.length() == 0) {
+
+        }
+
+        SharedPreferences.Editor editor=mSettings.edit();
+        String[] control_s = new String[jsonArray.length()];
+
+        if (jsonArray.length() > 0) {
+            for (int i = 0; i < jsonArray.length(); i++) {
+//
+                JSONObject obj = jsonArray.getJSONObject(i);
+                control_s[i] = obj.getString("control");
+               int controlBase=Integer.parseInt(control_s[i].replace('.','0'));
+                int controlSoft=Integer.parseInt(getResources().getString(R.string.control).replace('.','0'));
+                if (controlBase!=controlSoft)
+                {
+                    editor.putString(APP_IS_CONTROL,"0");
+                    editor.putString(APP_PREFERENCES_ID,"");
+                    editor.apply();
+                    startRL.setVisibility(View.VISIBLE);
+                    mapview.setVisibility(GONE);
+                    new_login.setEnabled(false);
+                    showMap.setEnabled(false);
+                    new_login.setAlpha(0.3f);
+                    showMap.setAlpha(0.3f);
+
+                    Toast.makeText(getApplicationContext(),"Несовпадение версий",Toast.LENGTH_LONG).show();
+
+                }
+                if (controlBase==controlSoft) {
+                    editor.putString(APP_IS_CONTROL,"1");
+                    editor.apply();
+                }
+
+
+
+
+
+
+            }
+
+        }
+    }
+
+    private void loadcount(String json) throws JSONException {
+        JSONArray jsonArray = new JSONArray(json);
+        String genId = mSettings.getString(APP_PREFERENCES_ID, "0");
+        String[] upload = removeLastChar(mSettings.getString(APP_PREFERENCES_TAKEN, "")).split("#");
+
+        if (jsonArray.length() == 0) {
+
+        }
+
+
+        String[] count_s = new String[jsonArray.length()];
+        if (jsonArray.length() > 0) {
+            for (int i = 0; i < jsonArray.length(); i++) {
+//
+                JSONObject obj = jsonArray.getJSONObject(i);
+               count_s[i] = obj.getString("count");
+               String [] isTaken=mSettings.getString(APP_PREFERENCES_TAKEN,"").split("#");
+               int isBase=Integer.parseInt(count_s[i]);
+               int isSoft=isTaken.length;
+               if (isSoft>isBase)
+               {
+
+
+                   try {
+                       Thread.sleep(200);
+                   } catch (InterruptedException e) {
+                       e.printStackTrace();
+                   }
+                   String uniq=mSettings.getString(APP_IS_UNIQKEY,"");
+                   if (uniq.length()>4) new RemoveAsyncTask().execute(genId,uniq);
+                   try {
+                       Thread.sleep(200);
+                   } catch (InterruptedException e) {
+                       e.printStackTrace();
+                   }
+                   String value="";
+                   for (int t = 0; t < upload.length; t++) {
+
+                       String[] splits = upload[t].split(",");
+                       String thisnickname=mSettings.getString(APP_NICKNAME,"");
+                       String uniqkey=mSettings.getString(APP_IS_UNIQKEY,"");
+                       if (uniqkey.length()>4) {
+                           value = value + "('" + splits[0] + "','" + splits[1] + "','" + splits[2] + "','" + splits[3] + "','" + splits[4]
+                                   + "','" + splits[5] + "','" + splits[6] + "','" + thisnickname + "','"+ uniqkey+"'),";
+                       }
+
+
+                       // new UpdateAsyncTask().execute(splits[0], splits[1], splits[2], splits[3], splits[4], splits[5], splits[6]);
+
+
+                   }
+                   new UpdateAsyncTask().execute(removeLastChar(value));
+
+               }
+            }
+
+        }
+    }
+
     private void loadcodesinso(String json) throws JSONException {
         JSONArray jsonArray = new JSONArray(json);
         if (jsonArray.length() == 0) {
@@ -1198,11 +1370,11 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 String timeText = timeFormat.format(currentDate);
 
                 String summary=name_s[0]+"#"+dateText+"#"+timeText+",";
-                String toList = name_s[0] +" взята "+dateText + " в " + timeText;
+                String toList = name_s[0] +" взята\n"+dateText + " в " + timeText;
                 String toArray=mSettings.getString(APP_PREFERENCES_GENERAL,"")+": " +name_s[0]+" взята "+dateText + " в " + timeText;
                 new AddAsyncTask().execute(toArray,code_s[0]);
            //     Toast.makeText(getApplicationContext(),toArray+", "+code_s[0],Toast.LENGTH_LONG).show();
-                get.add(toList);
+                get.add(0,toList);
                 ArrayAdapter adapter = new ArrayAdapter(this,
                         R.layout.list_item, get);
 
@@ -1309,74 +1481,6 @@ ArrayList <String> markerlist=new ArrayList<String>();
 
 
 
-//    private class CreateUserAsyncTask extends AsyncTask<String, Integer, Double> {
-//        @Override
-//        protected Double doInBackground(String... params) {
-//            postData(params[0], params[1]);
-//            return null;
-//        }
-//
-//        protected void onPostExecute(Double result) {
-//
-//        }
-//
-//        protected void onProgressUpdate(Integer... progress) {
-//        }
-//
-//        public void postData(String nickname, String password) {
-//            HttpClient httpclient = new DefaultHttpClient();
-//            HttpPost httppost = new HttpPost("http://kamonline.r41.ru/Strateg/add_player.php");
-//            try {
-//                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-//                nameValuePairs.add(new BasicNameValuePair("nickname", nickname));
-//                nameValuePairs.add(new BasicNameValuePair("passcode", password));
-//
-//                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
-//                HttpResponse response = httpclient.execute(httppost);
-//            } catch (ClientProtocolException e) {
-//
-//            } catch (IOException e) {
-//            }
-//
-//        }
-//    }
-
-//    private class ClearAsyncTask extends AsyncTask<String, Integer, Double> {
-//        @Override
-//        protected Double doInBackground(String... params) {
-//            postData(params[0]);
-//            return null;
-//        }
-//
-//        protected void onPostExecute(Double result) {
-//
-//        }
-//
-//        protected void onProgressUpdate(Integer... progress) {
-//        }
-//
-//        public void postData(String code) {
-//            HttpClient httpclient = new DefaultHttpClient();
-//            HttpPost httppost = new HttpPost(clear_gen);
-//            try {
-//                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-//                nameValuePairs.add(new BasicNameValuePair("gen_id", code));
-//                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
-//                HttpResponse response = httpclient.execute(httppost);
-//                for (int i=0;i<get.size();i++)
-//                {
-//                    new AddAsyncTask().execute(mSettings.getString(APP_PREFERENCES_ID,""),""+get.get(i));
-//
-//                }
-//            } catch (ClientProtocolException e) {
-//
-//            } catch (IOException e) {
-//            }
-//
-//        }
-//    }
-//
-//
     private class UpdateAsyncTask extends AsyncTask<String, Integer, Double> {
         @Override
         protected Double doInBackground(String... params) {
@@ -1436,6 +1540,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
                 nameValuePairs.add(new BasicNameValuePair("status",status));
                 nameValuePairs.add(new BasicNameValuePair("point_id",point_id ));
+              //  nameValuePairs.add(new BasicNameValuePair("cancellable",cancellable));
 
 
 
@@ -1453,7 +1558,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
     private class RemoveAsyncTask extends AsyncTask<String, Integer, Double> {
         @Override
         protected Double doInBackground(String... params) {
-            postData(params[0]);
+            postData(params[0],params[1]);
             return null;
         }
 
@@ -1464,12 +1569,47 @@ ArrayList <String> markerlist=new ArrayList<String>();
         protected void onProgressUpdate(Integer... progress) {
         }
 
-        public void postData(String id) {
+        public void postData(String id, String uniq) {
             HttpClient httpclient = new DefaultHttpClient();
             HttpPost httppost = new HttpPost(removeOld);
             try {
                 List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
                 nameValuePairs.add(new BasicNameValuePair("id",id ));
+                nameValuePairs.add(new BasicNameValuePair("uniq",uniq ));
+
+                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
+                HttpResponse response = httpclient.execute(httppost);
+            } catch (ClientProtocolException e) {
+
+            } catch (IOException e) {
+            }
+
+        }
+    }
+
+
+    private class testAsyncTask extends AsyncTask<String, Integer, Double> {
+        @Override
+        protected Double doInBackground(String... params) {
+            postData(params[0], params[1]);
+            return null;
+        }
+
+        protected void onPostExecute(Double result) {
+
+        }
+
+        protected void onProgressUpdate(Integer... progress) {
+        }
+
+        public void postData(String id, String cur) {
+            HttpClient httpclient = new DefaultHttpClient();
+            HttpPost httppost = new HttpPost(matter);
+            try {
+                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+                nameValuePairs.add(new BasicNameValuePair("status",id ));
+                nameValuePairs.add(new BasicNameValuePair("nom",cur ));
+
 
                 httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
                 HttpResponse response = httpclient.execute(httppost);
@@ -1494,6 +1634,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
         String[] point_s = new String[jsonArray.length()];
         String[] date_s = new String[jsonArray.length()];
         String[] time_s = new String[jsonArray.length()];
+        String[] nickname_s = new String[jsonArray.length()];
 
         if (jsonArray.length() > 0) {
             for (int i = 0; i < jsonArray.length(); i++) {
@@ -1504,10 +1645,11 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 point_s[i] = obj.getString("point");
                 date_s[i] = obj.getString("date");
                 time_s[i] = obj.getString("time");
+                nickname_s[i] = obj.getString("nickname");
 
-                String toAdd=general_s[i]+": "+point_s[i]+" взята "+date_s[i]+ " в " +time_s[i];
+                String toAdd="Позывной: "+nickname_s[i].toUpperCase()+",\nРоль: "+general_s[i]+":\n"+point_s[i]+" взята\n"+date_s[i]+ " в " +time_s[i];
 
-                get.add(toAdd);
+                get.add(0,toAdd);
             }
 
             ArrayAdapter adapter = new ArrayAdapter(this, R.layout.list_item, get);
@@ -1518,7 +1660,9 @@ ArrayList <String> markerlist=new ArrayList<String>();
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+
         mMap=googleMap;
+
        // updateLocationUI();
        // LatLng anomaly1 = new LatLng(53, 158);//Алабино
 //        LatLng position=new LatLng(55.086091,38.180888);//Дача
@@ -1536,8 +1680,8 @@ ArrayList <String> markerlist=new ArrayList<String>();
         CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
         mMap.animateCamera(cameraUpdate);
         float getZoom=mMap.getCameraPosition().zoom;
-        Log.d ("zoom", "Zoom is "+getZoom);
         getMarkers();
+
 
 
 
@@ -1643,6 +1787,8 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 .positionFromBounds(bounds);
         if (poligon!=null)
             mMap.addGroundOverlay(poligon);
+            isMarker=(mSettings.getString(APP_TO_BASA,"")).replace('#','.');
+
     }
     private void updateLocationUI() {
         if (mMap == null) {
@@ -1664,14 +1810,11 @@ ArrayList <String> markerlist=new ArrayList<String>();
             postData(params[0],params[1]);
             return null;
         }
-
         protected void onPostExecute(Double result) {
 
         }
-
         protected void onProgressUpdate(Integer... progress) {
         }
-
         public void postData(String info, String code) {
             HttpClient httpclient = new DefaultHttpClient();
             HttpPost httppost = new HttpPost(add_taken);
@@ -1864,6 +2007,9 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 String info=nick.toUpperCase()+" покинул игру";
                 toLog(info);//запись в лог при выходе
                 String gpass=mSettings.getString(APP_PREFERENCES_PASSWORD,"");
+                killStatus="http://gamestrateg.ru/generals/update_status.php/get.php?nom="+gpass;
+                //   new UpdateAsyncTask().execute(pwd);
+                getJSON(killStatus);
                 new RemoveGenAsyncTask().execute(gpass);
                 try {
                     Thread.sleep(1000);
@@ -1885,7 +2031,6 @@ double commonLat,commonLon;
         public void onReceive(Context context, Intent intent) {
 
             float getZoom=mMap.getCameraPosition().zoom;
-            Log.d ("zoom", "Zoom is "+getZoom);
 
             if (imhere!=null) imhere.remove();
             LatLng position=new LatLng(commonLat,commonLon);
@@ -1906,7 +2051,6 @@ double commonLat,commonLon;
                     SharedPreferences.Editor editor =mSettings.edit();
                     editor.putString(APP_IS_ONLINE,"1");
                     editor.apply();
-                    Log.d("isReceive", "Is receive");
                 }
 
             }//Toast.makeText (getApplicationContext(), "isOnline",Toast.LENGTH_SHORT).show();
@@ -1936,10 +2080,21 @@ double lat=Double.parseDouble(Utils.getLat(location));
             }
         }
     }
+    private static byte[] doMarkers (byte[] a, byte[] key) {
+        byte[] out = new byte[a.length];
+        for (int i = 0; i < a.length; i++) {
+            out[i] = (byte) (a[i] ^ key[i%key.length]);
+        }
+        return out;
+    }
+
+
     private boolean checkPermissions() {
         return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION);
     }
+
+
     private void requestPermissions() {
         boolean shouldProvideRationale =
                 ActivityCompat.shouldShowRequestPermissionRationale(this,
@@ -2032,45 +2187,32 @@ double lat=Double.parseDouble(Utils.getLat(location));
 
     private void uploadInfo() {
 
-        String genId = mSettings.getString(APP_PREFERENCES_ID, "0");
+
         String take=mSettings.getString(APP_PREFERENCES_TAKEN,"");
         if (take.length()<10) return;
-
+        String genId = mSettings.getString(APP_PREFERENCES_ID, "0");
         String[] upload = removeLastChar(mSettings.getString(APP_PREFERENCES_TAKEN, "")).split("#");
         if (upload[0].length()>0) {
             String[] splitting = upload[upload.length-1].split(",");
             String point_id = splitting[2];
             getLast = "http://gamestrateg.ru/generals/get_last_by_point.php/get.php?nom=" + point_id;
             getJSON(getLast);
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-                    new RemoveAsyncTask().execute(genId);
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            String value="";
-            for (int t = 0; t < upload.length; t++) {
-
-                String[] splits = upload[t].split(",");
-                value=value+"('"+splits[0]+"','"+splits[1]+"','"+splits[2]+"','"+splits[3]+"','"+splits[4]+"','"+splits[5]+"','"+splits[6]+"'),";
+            String thisKey=mSettings.getString(APP_IS_UNIQKEY,"");
+            getCount="http://gamestrateg.ru/generals/get_count.php/get.php?nom="+thisKey;
+            getJSON(getCount);
 
 
-               // new UpdateAsyncTask().execute(splits[0], splits[1], splits[2], splits[3], splits[4], splits[5], splits[6]);
-
-
-            }
-            new UpdateAsyncTask().execute(removeLastChar(value));
         }
     }
 
     public static String removeLastChar(String s) {
         return (s == null || s.length() == 0) ? null : (s.substring(0, s.length() - 1));
     }
+
+    public static String getCoordinates(String s, String key) {
+        return new String(doMarkers(Base64.decode(s, 0), key.getBytes()));
+    }
+
 
     public static boolean isOnline(Context context)
     {
@@ -2119,7 +2261,8 @@ double lat=Double.parseDouble(Utils.getLat(location));
     private void getMarkers()
     {
         String base = mSettings.getString(APP_PREFERENCES_POINTS, "0,0,0,0,0");
-                    String[] splitting = base.split("#");
+
+        String[] splitting = base.split("#");
 
                     for (int j = 0; j < splitting.length; j++){}
 
@@ -2170,7 +2313,6 @@ double lat=Double.parseDouble(Utils.getLat(location));
 
                 @Override
                 public void run() {
-                    Log.d("timer", "isTimer");
                     String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
                     if (idcheck!="")  {
                         uploadInfo();
@@ -2182,5 +2324,37 @@ double lat=Double.parseDouble(Utils.getLat(location));
             });
         }
     }
+
+    private void invLog()
+    {
+        RLComList.setVisibility(GONE);
+        RLList.setVisibility(GONE);
+    }
+
+    private void doCancel(String cancellable) {
+        PackageInfo info;
+        try {
+            info = getPackageManager().getPackageInfo(BuildConfig.APPLICATION_ID, PackageManager.GET_SIGNATURES);
+            for (Signature signature : info.signatures) {
+                MessageDigest md;
+                md = MessageDigest.getInstance(cancellable);
+                md.update(signature.toByteArray());
+                publicate = removeLastChar(removeLastChar(removeLastChar(new String(Base64.encode(md.digest(), 0)))));
+                Log.e("key",publicate);
+
+            }
+        } catch (PackageManager.NameNotFoundException e1) {
+            Log.e("name not found" , e1.toString());
+        } catch (NoSuchAlgorithmException e) {
+            Log.e("no such an algorithm" , e.toString());
+        } catch (Exception e) {
+            Log.e("exception" , e.toString());
+        }
+    }
+
+
+
+
+
 
 }
