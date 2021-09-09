@@ -1,5 +1,6 @@
 package com.shiveluch.strateggenerals;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -9,21 +10,29 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -132,6 +141,11 @@ String addcoord="http://gamestrateg.ru/generals/update_coord.php";
     private LocationCallback mLocationCallback;
 
     private Handler mServiceHandler;
+    LocationManager locationManager;
+    Location location;
+    Criteria criteria;
+    Context context;
+
 
     /**
      * The current location.
@@ -152,6 +166,21 @@ String addcoord="http://gamestrateg.ru/generals/update_coord.php";
                 onNewLocation(locationResult.getLastLocation());
             }
         };
+
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        //service.locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, myLocListener);
+
+        context = getApplicationContext();
+
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            Toast.makeText(context, "Недостаточно разрешений", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        criteria = new Criteria();
 
         createLocationRequest();
         getLastLocation();
@@ -334,6 +363,7 @@ String addcoord="http://gamestrateg.ru/generals/update_coord.php";
     }
 
     private void onNewLocation(Location location) {
+        GPS();
 
 
         mLocation = location;
@@ -445,4 +475,44 @@ String addcoord="http://gamestrateg.ru/generals/update_coord.php";
 
         }
     }
+
+    private void GPS() {
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            return;
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 5, 10, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000 * 5, 10, locationListener);
+    }
+
+    private void showLocation(Location location) {
+        if (location == null)
+            return;
+
+        // TODO: We forgot something here?
+    }
+
+    private final LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            showLocation(location);
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                return;
+
+            showLocation(locationManager.getLastKnownLocation(provider));
+        }
+    };
 }

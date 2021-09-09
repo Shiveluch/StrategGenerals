@@ -22,9 +22,12 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -83,6 +86,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -102,47 +106,52 @@ import static android.view.View.GONE;
 
 public class Login extends AppCompatActivity implements OnMapReadyCallback {
     String sbname;
-    String codenames="http://gamestrateg.ru/generals/get_codes.php";
-    String getcodes="http://gamestrateg.ru/generals/get_gps_points.php";
-    String addtolog="http://gamestrateg.ru/generals/add_tolog.php";
-    String add_taken="http://gamestrateg.ru/generals/add_takens.php";
-    String getTaken="http://gamestrateg.ru/generals/get_taken.php";
-    String matter="";
-    String getLastfromLog="";
+    String domain = "http://gamestrateg.ru/generals/";
+    String codenames = "http://gamestrateg.ru/generals/get_codes.php";
+    String getcodes = "http://gamestrateg.ru/generals/get_gps_points.php";
+    String addtolog = "http://gamestrateg.ru/generals/add_tolog.php";
+    String add_taken = "http://gamestrateg.ru/generals/add_takens.php";
+    String getTaken = "http://gamestrateg.ru/generals/get_taken.php";
+    String matter = "";
+    String getLastfromLog = "";
     String isMarker;
-    String getTime="";
-    String getControl="http://gamestrateg.ru/generals/get_control.php";
-    float mapzoom=13.835042f;
-    String updateOwner="http://gamestrateg.ru/generals/update_owner.php";
-    String removeOld="http://gamestrateg.ru/generals/remove_old_takens.php";
-    String getEvents="http://gamestrateg.ru/generals/get_events.php";
-    String getLast="";
-    String getCount="";
-    String publicate="";
-    String getSize="http://gamestrateg.ru/generals/get_points_size.php";
-String message="";
-String takePass="";
-String killStatus="";
-String updateStatus="";
-String lastDate;
-boolean showlist=false;
-LatLng position =  new LatLng(54.854968, 38.121925);//ступино
-//   LatLng position=new LatLng(55.54, 36.937);//Алабино
-//  LatLng position=new LatLng(55.086091,38.180888);//дача
-  //  LatLng position=new LatLng(53.128827,158.359331);//Совхоз
-    String summary="";
-    String get_pass="";
-    String alpha="ABCDEFHIKLMNPQRSTUVWXYZ123456789";
-    String command="";
+    String getTime = "";
+    String getControl = "http://gamestrateg.ru/generals/get_control.php";
+    float mapzoom = 14.535042f;
+    String updateOwner = "http://gamestrateg.ru/generals/update_owner.php";
+    String removeOld = "http://gamestrateg.ru/generals/remove_old_takens.php";
+    String getEvents = "http://gamestrateg.ru/generals/get_events.php";
+    String getLast = "";
+    String getCount = "";
+    String publicate = "";
+    String getSize = "http://gamestrateg.ru/generals/get_points_size.php";
+    String message = "";
+    String takePass = "";
+    String killStatus = "";
+    String updateStatus = "";
+    String lastDate;
+    String getCom = "";
+    String getTimings="http://gamestrateg.ru/generals/get_timings.php";
+    boolean showlist = false;
+    //LatLng position =  new LatLng(54.885710, 38.35);//Энергетик
+//LatLng position =  new LatLng(54.854968, 38.121925);//ступино
+    LatLng position = new LatLng(55.54195, 36.93696);//Алабино
+    //  LatLng position=new LatLng(55.086091,38.180888);//дача
+    //  LatLng position=new LatLng(53.128827,158.359331);//Совхоз
+    String summary = "";
+    String get_pass = "";
+    String alpha = "ABCDEFHIKLMNPQRSTUVWXYZ123456789";
+    String command = "";
     String currentpoint;
-    TextView genname,mess, coordtext;
+    TextView genname, mess, coordtext, yellowtime, bluetime, greytime;
     RelativeLayout RL2;
-    boolean isTaken=false;
+    boolean isTaken = false;
     private GoogleMap mMap;
+    private LocationManager locationManager;
     Context context;
     SupportMapFragment mapFragment;
     SharedPreferences mSettings;
-    boolean showComonList=false;
+    boolean showComonList = false;
     public static final String APP_PREFERENCES = "mysettings";//filename
     public static final String APP_PREFERENCES_INFO = "INFO";//player's INFO
     public static final String APP_PREFERENCES_PASSWORD = "Password";//player's system password
@@ -150,20 +159,22 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
     public static final String APP_PREFERENCES_ID = "Taken";//player's taken points
     public static final String APP_PREFERENCES_TAKEN = "CodesOfTakenPoints";//player's taken points
     public static final String APP_PREFERENCES_GENERAL = "General";
-    public static final String APP_PREFERENCES_SIDE="Side";
-    public static final String APP_PREFERENCES_POINTS="Points";
-    public static final String APP_PREFERENCES_TIME="Time";
-    public static final String APP_POINTS_SIZE="PointSize";
-    public static final String APP_IS_LOGIN="isLogin";
-    public static final String APP_TO_BASA="toBasa";
-    public static final String APP_STATUS="status";
-    public static final String APP_PUBLIC="public";
-    public static final String APP_NICKNAME="Nickname";
-    public static final String APP_IS_ONLINE="isOnline";
-    public static final String APP_IS_CONTROL="Control";
-    public static final String APP_IS_UNIQKEY="Uniqkey";
+    public static final String APP_PREFERENCES_SIDE = "Side";
+    public static final String APP_ORGANIZATOR = "Organizator";
+    public static final String APP_PREFERENCES_POINTS = "Points";
+    public static final String APP_PREFERENCES_TIME = "Time";
+    public static final String APP_POINTS_SIZE = "PointSize";
+    public static final String APP_IS_LOGIN = "isLogin";
+    public static final String APP_TO_BASA = "toBasa";
+    public static final String APP_STATUS = "status";
+    public static final String APP_PUBLIC = "public";
+    public static final String APP_NICKNAME = "Nickname";
+    public static final String APP_IS_ONLINE = "isOnline";
+    public static final String APP_IS_CONTROL = "Control";
+    public static final String APP_IS_UNIQKEY = "Uniqkey";
 
-    Marker [] markers=new Marker[50];
+
+    Marker[] markers = new Marker[50];
     String genName;
     Button approve, closeLog, reset, cancelReset, showLog, showMap, showMap2;
     ListView genlist;
@@ -172,30 +183,29 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
     private MyTimerTask myTimerTask;
 
 
-
     //TextView first_login, first_password;
     TextView generalname;
-    EditText first_login,first_password,event_password;
-    RelativeLayout RL1,secRL,mapview,center, startRL, RLList, RLComList;
-    Button  new_login, QRScan,send, sendlog;
-    boolean check=false;
+    EditText first_login, first_password, event_password;
+    RelativeLayout RL1, secRL, mapview, center, startRL, RLList, RLComList;
+    Button new_login, QRScan, send, sendlog;
+    boolean check = false;
     public String have_pass;
-    ImageView cenmap,backs,finger, QR, selflog, commonlog, upload, exit;
+    ImageView cenmap, backs, finger, QR, selflog, commonlog, upload, exit;
     LinearLayout toppanel;
     ListView list;
     // ExpandableListView listView;
-    ArrayList <String> get=new ArrayList<>();
-    ArrayList <String> toBasa=new ArrayList<>();
-    ArrayList <String> toCommonLog = new ArrayList<>();
+    ArrayList<String> get = new ArrayList<>();
+    ArrayList<String> toBasa = new ArrayList<>();
+    ArrayList<String> toCommonLog = new ArrayList<>();
 
     // Used in checking for runtime permissions.
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
 
     // The BroadcastReceiver used to listen from broadcasts from the service.
-    private MyReceiver myReceiver;
+    //   private MyReceiver myReceiver;
 
     // A reference to the service used to get location updates.
-    private LocationUpdatesService mService = null;
+    // private LocationUpdatesService mService = null;
 
     // Tracks the bound state of the service.
     private boolean mBound = false;
@@ -203,73 +213,181 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
     // UI elements.
 
     // Monitors the state of the connection to the service.
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
-            mService = binder.getService();
-            mService.requestLocationUpdates(); // also request it here
-            mBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mService = null;
-            mBound = false;
-        }
-    };
+//    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+//
+//        @Override
+//        public void onServiceConnected(ComponentName name, IBinder service) {
+//            LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
+//            mService = binder.getService();
+//            mService.requestLocationUpdates(); // also request it here
+//            mBound = true;
+//
+//        }
+//
+//        @Override
+//        public void onServiceDisconnected(ComponentName name) {
+//            mService = null;
+//            mBound = false;
+//        }
+//    };
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (mBound) {
-            // Unbind from the service. This signals to the service that this activity is no longer
-            // in the foreground, and the service can respond by promoting itself to a foreground
-            // service.
-            unbindService(mServiceConnection);
-            mBound = false;
-        }
+//        if (mBound) {
+//            // Unbind from the service. This signals to the service that this activity is no longer
+//            // in the foreground, and the service can respond by promoting itself to a foreground
+//            // service.
+//            unbindService(mServiceConnection);
+//            mBound = false;
+        //  }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        if (!checkPermissions()) {
-            requestPermissions();
-        } else if (mService != null) { // add null checker
-            mService.removeLocationUpdates();
-            mService.requestLocationUpdates();
-        }
-        bindService(new Intent(this, LocationUpdatesService.class), mServiceConnection,
-                Context.BIND_AUTO_CREATE);
+//        if (!checkPermissions()) {
+//            requestPermissions();
+//        } else if (mService != null) { // add null checker
+//            mService.removeLocationUpdates();
+//            mService.requestLocationUpdates();
+//        }
+//        bindService(new Intent(this, LocationUpdatesService.class), mServiceConnection,
+//                Context.BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onPause() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
+       // LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
 
         super.onPause();
+    }
+
+    private LocationListener locationListener = new LocationListener() {
+
+        @Override
+        public void onLocationChanged(Location location) {
+            showLocation(location);
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            checkEnabled();
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            checkEnabled();
+            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            showLocation(locationManager.getLastKnownLocation(provider));
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            if (provider.equals(LocationManager.GPS_PROVIDER)) {
+            //    Log.d("ShowLoc", "GPS");
+            } else if (provider.equals(LocationManager.NETWORK_PROVIDER)) {
+         //       Log.d("ShowLoc", "Network");
+
+            }
+        }
+    };
+
+    private void showLocation(Location location) {
+        if (location == null)
+            return;
+        if (location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+      //      Log.d("ShowLoc", (formatLocation(location)));
+          //  coordtext.setText(formatLocation(location));
+
+        } else if (location.getProvider().equals(
+                LocationManager.NETWORK_PROVIDER)) {
+      //      Log.d("ShowLoc", (formatLocation(location)));
+         //   coordtext.setText(formatLocation(location));
+        }
+        String[] locations=formatLocation(location).split("#");
+        commonLat= Double.parseDouble(locations[0].replace(",","."));
+        commonLon= Double.parseDouble(locations[1].replace(",","."));
+        if (imhere!=null) imhere.remove();
+        imhere=(mMap.addMarker(new MarkerOptions()
+                .position(new LatLng(commonLat, commonLon))
+                .title("Я здесь")
+                .icon(getBitmapHighDescriptor(R.drawable.imhere))));
+
+    }
+
+
+    private String formatLocation(Location location) {
+        if (location == null)
+            return "";
+        return String.format(
+                "%1$.5f#%2$.5f",
+                location.getLatitude(), location.getLongitude());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                1000 * 3, 10, locationListener);
+        locationManager.requestLocationUpdates(
+                LocationManager.NETWORK_PROVIDER, 1000 * 3, 10,
+                locationListener);
+        checkEnabled();
         getJSON(getSize);
         isMarker=(mSettings.getString(APP_TO_BASA,"")).replace('#','.');
         uploadInfo();
+        String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
+        String gencheck=mSettings.getString(APP_PREFERENCES_GENERAL,"");
+        String nick=mSettings.getString(APP_NICKNAME,"");
+        if (idcheck!="") {
+            startRL.setVisibility(GONE);
+            //genName="Генерал "+mSettings.getString(APP_PREFERENCES_ID,"")+": ";
+
+            //  new_login.setVisibility(View.GONE);
+            // showMap.setVisibility(GONE);
+            //
+            genname.setText(nick.toUpperCase() + ", " + gencheck);
+            //        //secRL.setVisibility(View.VISIBLE);}
+            mapview.setVisibility(View.VISIBLE);
+            toppanel.setVisibility(View.VISIBLE);
+            QR.setVisibility(View.VISIBLE);
+            backs.setVisibility(GONE);
+        }
       //  getMarkers();
         //markers
-        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
-                new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
+//        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
+//                new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
 
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        myReceiver = new MyReceiver();
+        //myReceiver = new MyReceiver();
         setContentView(R.layout.activity_login);
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+
         if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 123);
         }
@@ -305,6 +423,9 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
         upload=findViewById(R.id.upload);
         exit=findViewById(R.id.exit);
         RLComList=findViewById(R.id.RLComList);
+        yellowtime=findViewById(R.id.yellowtime);
+        bluetime=findViewById(R.id.bluetime);
+        greytime=findViewById(R.id.greytime);
 
         first_password = findViewById(R.id.first_password);
         new_login = findViewById(R.id.new_login);
@@ -323,6 +444,9 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
         list=findViewById(R.id.list);
         QR=findViewById(R.id.qr);
         mSettings = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+        String org=mSettings.getString(APP_PREFERENCES_ID,"0");
+     //   Log.d("OrgFlagID","Is org: "+org);
+
         int controls=Integer.parseInt(mSettings.getString(APP_IS_CONTROL,"0"));
 
         if (controls==0) {getJSON(getControl);}
@@ -332,7 +456,7 @@ LatLng position =  new LatLng(54.854968, 38.121925);//ступино
         String info = mSettings.getString(APP_PREFERENCES_INFO, "");
         String points=mSettings.getString(APP_PREFERENCES_CODES,"");
         String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
-        Log.d ("check","Check is "+idcheck);
+      //  Log.d ("check","Check is "+idcheck);
         String isCheck=mSettings.getString(APP_TO_BASA,"");
         String isLogin=mSettings.getString(APP_IS_LOGIN,"0");
         String gencheck=mSettings.getString(APP_PREFERENCES_GENERAL,"");
@@ -417,7 +541,7 @@ finger.setOnClickListener(new View.OnClickListener() {
 
         float getZoom=mMap.getCameraPosition().zoom;
 
-       if (imhere!=null) imhere.remove();
+
         LatLng position=new LatLng(commonLat,commonLon);
         if (position.latitude==0 && position.longitude==0)
         {
@@ -430,6 +554,7 @@ finger.setOnClickListener(new View.OnClickListener() {
                 .build();
         CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
         mMap.animateCamera(cameraUpdate);
+        if (imhere!=null) imhere.remove();
         imhere=(mMap.addMarker(new MarkerOptions()
                 .position(new LatLng(commonLat, commonLon))
                 .title("Я здесь")
@@ -487,7 +612,7 @@ finger.setOnClickListener(new View.OnClickListener() {
 
         getStatus();
 
-        if (idcheck!="") {
+        if (idcheck!="" || Integer.parseInt(mSettings.getString(APP_IS_LOGIN,"0"))>0 ) {
             startRL.setVisibility(GONE);
             //genName="Генерал "+mSettings.getString(APP_PREFERENCES_ID,"")+": ";
 
@@ -495,14 +620,11 @@ finger.setOnClickListener(new View.OnClickListener() {
             // showMap.setVisibility(GONE);
             //
             genname.setText(nick.toUpperCase() + ", " + gencheck);
-            //secRL.setVisibility(View.VISIBLE);}
-
+    //        //secRL.setVisibility(View.VISIBLE);}
             mapview.setVisibility(View.VISIBLE);
             toppanel.setVisibility(View.VISIBLE);
             QR.setVisibility(View.VISIBLE);
             backs.setVisibility(GONE);
-
-
         }
         String taken=mSettings.getString(APP_PREFERENCES_TAKEN,"");
 
@@ -576,17 +698,30 @@ finger.setOnClickListener(new View.OnClickListener() {
                 String curPass=first_password.getText().toString();
                 getMarkers();
                 if (curPass.length()>0 && curLog.length()>0)
-                {sbname="http://gamestrateg.ru/generals/get_generals.php/get.php?nom="+curPass;
+                {
+                    System.out.println(""+curPass.length());
+                    if (curPass.length()<6){
+                    sbname="http://gamestrateg.ru/generals/get_generals.php/get.php?nom="+curPass;
                 SharedPreferences.Editor editor=mSettings.edit();
                     editor.putString(APP_NICKNAME,curLog);
                     editor.putString(APP_IS_LOGIN,"0");
                     editor.apply();
-                    getJSON(sbname);
+                    getJSON(sbname);}
+
+                    if (curPass.length()==9)
+                    {
+                        SharedPreferences.Editor editor=mSettings.edit();
+                        editor.putString(APP_NICKNAME,curLog);
+                        editor.putString(APP_IS_LOGIN,"0");
+                        editor.apply();
+                        getCom=domain+"get_commander.php/get.php?nom="+curPass;
+                        getJSON(getCom);
+                    }
 
                 }
                 else
                 {
-                    Toast.makeText(getApplicationContext(),"Не введено имя пользователя или пароль",Toast.LENGTH_SHORT);
+                    Toast.makeText(getApplicationContext(),"Не введено имя пользователя или пароль",Toast.LENGTH_SHORT).show();
                 }
 
             }
@@ -595,35 +730,43 @@ finger.setOnClickListener(new View.OnClickListener() {
         QR.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                invLog();
-                getJSON(getTaken);
+                String owner=mSettings.getString(APP_PREFERENCES_SIDE,"");
+                if (isOnline()) {
+                    invLog();
 
-                IntentIntegrator integrator = new IntentIntegrator(activity);
-                integrator.setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES);
+                    getJSON(getTaken);
 
-                integrator.setPrompt(" ");
-                integrator.setCameraId(0);
+                    IntentIntegrator integrator = new IntentIntegrator(activity);
+                    integrator.setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES);
+
+                    integrator.setPrompt(" ");
+                    integrator.setCameraId(0);
 //                integrator.autoWide();
-                //         integrator.setBeepEnabled(false);
-                //     integrator.setBarcodeImageEnabled(false);
-                try {
-                    integrator.initiateScan();
-                } catch (Exception e) {
+                    //         integrator.setBeepEnabled(false);
+                    //     integrator.setBarcodeImageEnabled(false);
+                    try {
+                        integrator.initiateScan();
+                    } catch (Exception e) {
 
+                    }
                 }
+                else Toast.makeText(getApplicationContext(), "Нет подключения к интернету",Toast.LENGTH_LONG).show();
             }
+
+
         });
 
         QRScan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getJSON(getTaken);
+
+
 
                 IntentIntegrator integrator = new IntentIntegrator(activity);
                 integrator.setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES);
                 integrator.setPrompt(" ");
                 integrator.setCameraId(0);
-                integrator.autoWide();
+            //    integrator.autoWide();
                 //         integrator.setBeepEnabled(false);
                 //     integrator.setBarcodeImageEnabled(false);
                 try {
@@ -639,6 +782,7 @@ finger.setOnClickListener(new View.OnClickListener() {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        getJSON(getTaken);
         String taken=mSettings.getString(APP_PREFERENCES_TAKEN,"");
         String toBasa=mSettings.getString(APP_TO_BASA,"");
 
@@ -648,6 +792,7 @@ finger.setOnClickListener(new View.OnClickListener() {
         SharedPreferences.Editor newedit =mSettings.edit();
         newedit.putString(APP_IS_ONLINE,"0");
         newedit.apply();
+        int takeDistance=9000000;
 
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
 
@@ -668,8 +813,8 @@ finger.setOnClickListener(new View.OnClickListener() {
 
                         String [] split=convert.split("\\.");
                         int finalDist=Integer.parseInt(split[0]);
-                        if (finalDist>50) Toast.makeText(getApplicationContext(),""+currentcode[0]+" не может быть взята, дистанция: "+finalDist + "метров",Toast.LENGTH_LONG).show();
-                        if (finalDist<=50)
+                        if (finalDist>takeDistance) Toast.makeText(getApplicationContext(),""+currentcode[0]+" не может быть взята, дистанция: "+finalDist + "метров",Toast.LENGTH_LONG).show();
+                        if (finalDist<=takeDistance)
                         {
                             // Текущее время
                             Date currentDate = new Date();
@@ -705,7 +850,7 @@ finger.setOnClickListener(new View.OnClickListener() {
                                 e.printStackTrace();
                             }
                              double isDate=currentDate.getTime();
-                             if (isBegin<isDate && isDate<isEnd)
+                            // if (isBegin<isDate && isDate<isEnd)
                              {
                                  Toast.makeText(getApplicationContext(),cPoint+" взята",Toast.LENGTH_LONG).show();
                                  taken=taken+cGen+","+cPoint+","+idPoint+","+datetime+","+cSide+","+cId+"#";
@@ -719,14 +864,17 @@ finger.setOnClickListener(new View.OnClickListener() {
                                 editor.putString(APP_PREFERENCES_INFO,(inf+"#"));
                                 editor.putString(APP_PREFERENCES_TAKEN,(taken));
                                 editor.apply();
+                                String owner=mSettings.getString(APP_PREFERENCES_SIDE,"0");
 
-                                uploadInfo();
+                              //  uploadInfo();
+                          //       Log.d("Side", "Check side: " + owner+", "+new_codename);
+                                 new uploadAsyncTask().execute("update_owner",owner, new_codename,""+i,"");
                              }
-                             else
-                             {
-                                 Toast.makeText(getApplicationContext(),"Время взятия истекло либо не наступило",Toast.LENGTH_LONG).show();
-
-                             }
+//                             else
+//                             {
+//                                 Toast.makeText(getApplicationContext(),"Время взятия истекло либо не наступило",Toast.LENGTH_LONG).show();
+//
+//                             }
                         }
                         isCode=true;
                     }
@@ -748,6 +896,19 @@ finger.setOnClickListener(new View.OnClickListener() {
     }
 
     final Activity activity = this;
+
+    public boolean isOnline() {
+        ConnectivityManager cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo nInfo = cm.getActiveNetworkInfo();
+        if (nInfo != null && nInfo.isConnected()) {
+            Log.v("status", "ONLINE");
+            return true;
+        }
+        else {
+            Log.v("status", "OFFLINE");
+            return false;
+        }
+    }
 
     private void getJSON(final String urlWebService) {
         class GetJSON extends AsyncTask<Void, Void, String> {
@@ -779,6 +940,9 @@ finger.setOnClickListener(new View.OnClickListener() {
 
                         if (urlWebService==updateStatus)
                             updateGenStatus(s);
+                        if (urlWebService==getTimings)
+                            loadTimings(s);
+
 
                         if (urlWebService==getSize)
                             loadsize(s);
@@ -791,6 +955,10 @@ finger.setOnClickListener(new View.OnClickListener() {
 
                         if (urlWebService==killStatus)
                             updateGenStatus(s);
+
+                        if (urlWebService==killStatus) updateGenStatus(s);
+
+                        if (urlWebService==getCom) loadCom(s);
 
                         if (urlWebService==sbname)
 
@@ -865,7 +1033,49 @@ finger.setOnClickListener(new View.OnClickListener() {
         getJSON.execute();
     }
 
+    private void loadCom(String json) throws JSONException {
+        JSONArray jsonArray = new JSONArray(json);
 
+        if (jsonArray.length() == 0) {
+            Toast.makeText(getApplicationContext(),"Пароль не опознан",Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String[] id_s = new String[jsonArray.length()];
+
+
+
+        if (jsonArray.length() > 0) {
+     //       for (int i = 0; i < jsonArray.length(); i++) {
+//
+              //  JSONObject obj = jsonArray.getJSONObject(i);
+//                id_s[i]=obj.getString("id");
+
+                    check=true;
+                    String nick=mSettings.getString(APP_NICKNAME,"");
+                    System.out.println(nick);
+                    SharedPreferences.Editor editor=mSettings.edit();
+                    editor.putString(APP_PREFERENCES_ID,"9");
+                    editor.putString(APP_PREFERENCES_GENERAL,"Организатор");
+                    editor.putString(APP_PREFERENCES_PASSWORD,first_password.getText().toString());
+                    editor.putString(APP_IS_LOGIN,"1");
+                    editor.putString(APP_ORGANIZATOR,"9");
+                    editor.apply();
+                    genname.setText(nick.toUpperCase()+", " + mSettings.getString(APP_PREFERENCES_GENERAL,""));
+                    have_pass=mSettings.getString(APP_PREFERENCES_PASSWORD,"");
+                    getJSON(getcodes);
+                    String info=nick.toUpperCase()+" вошел в игру как организатор";
+                    toLog(info);//запись в лог при входе
+            startRL.setVisibility(GONE);
+            mapview.setVisibility(View.VISIBLE);
+            toppanel.setVisibility(View.VISIBLE);
+            QR.setVisibility(View.VISIBLE);
+            backs.setVisibility(GONE);
+            //}
+
+        }
+        getJSON(getControl);
+    }
 
 
 
@@ -892,11 +1102,11 @@ return;
                 gpass_s[i] = obj.getString("gpass");
                 status_s[i] = obj.getString("status");
                 int curStatus=Integer.parseInt(status_s[i]);
-                if (curStatus==1)
-                {
-                    Toast.makeText(getApplicationContext(),"Генерал уже в игре",Toast.LENGTH_LONG).show();
-                    return;
-                }
+//                if (curStatus==1)
+//                {
+//                    Toast.makeText(getApplicationContext(),"Генерал уже в игре",Toast.LENGTH_LONG).show();
+//                    return;
+//                }
                 if (gpass_s[i].equalsIgnoreCase(first_password.getText().toString())) {
                   check=true;
                     String nick=mSettings.getString(APP_NICKNAME,"");
@@ -946,6 +1156,48 @@ return;
 
         }
 
+    }
+
+
+    private void loadTimings(String json) throws JSONException {
+        JSONArray jsonArray = new JSONArray(json);
+        if (jsonArray.length() == 0) {
+
+        }
+        String[] status_s = new String[jsonArray.length()];
+        String[] yellow_s = new String[jsonArray.length()];
+        String[] blue_s = new String[jsonArray.length()];
+        String[] grey_s = new String[jsonArray.length()];
+        String[] control_s = new String[jsonArray.length()];
+        int yellow=0,blue=0,grey=0;
+
+
+        if (jsonArray.length() > 0) {
+            for (int i = 0; i < (jsonArray.length()-7); i++) {
+//
+                JSONObject obj = jsonArray.getJSONObject(i);
+                status_s[i] = obj.getString("status");
+                yellow_s[i] = obj.getString("yellow");
+                blue_s[i] = obj.getString("blue");
+                grey_s[i] = obj.getString("grey");
+                control_s[i] = obj.getString("control");
+                yellow+=Integer.parseInt(yellow_s[i]);
+                blue+=Integer.parseInt(blue_s[i]);
+                grey+=Integer.parseInt(grey_s[i]);
+                int status=Integer.parseInt(status_s[i]);
+                if (control_s[i].equals("NULL")||control_s[i].equals("null")||control_s[i]==null||control_s[i]=="") control_s[i]="0";
+                if (status==1) yellow+=Integer.parseInt(control_s[i]);
+                if (status==2) blue+=Integer.parseInt(control_s[i]);
+                if (status==3) grey+=Integer.parseInt(control_s[i]);
+
+            }
+       //     Log.d("Timings", "Yellow: "+yellow+", Blue: "+blue+", Grey: "+grey);
+            yellowtime.setText("Общее время контроля Единства: "+yellow+" мин.");
+            bluetime.setText("Общее время контроля Коалиции: "+blue+" мин.");
+            greytime.setText("Общее время контроля Союза: "+grey+" мин.");
+
+
+        }
     }
 
     private void loadsize(String json) throws JSONException {
@@ -1391,6 +1643,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
     private void loadstatus(String json) throws JSONException {
         JSONArray jsonArray = new JSONArray(json);
         if (jsonArray.length() == 0) {
+            if (!mSettings.getString(APP_PREFERENCES_ID,"0").equals("9"))
             mSettings.edit().clear().apply();
             first_password.setText("");
             secRL.setVisibility(GONE);
@@ -1411,7 +1664,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 if (status==0)
                 {
                     check=false;
-
+                    if (!mSettings.getString(APP_PREFERENCES_ID,"0").equals("9"))
                     mSettings.edit().clear().apply();
                     first_password.setText("");
                     mapview.setVisibility(GONE);
@@ -1663,7 +1916,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
 
         mMap=googleMap;
 
-       // updateLocationUI();
+      //  updateLocationUI();
        // LatLng anomaly1 = new LatLng(53, 158);//Алабино
 //        LatLng position=new LatLng(55.086091,38.180888);//Дача
 //        mMap.moveCamera(CameraUpdateFactory.newLatLng(position));
@@ -1696,6 +1949,29 @@ ArrayList <String> markerlist=new ArrayList<String>();
 
 
                // Toast.makeText(context,""+latLng.latitude+", "+latLng.longitude,Toast.LENGTH_LONG).show();
+            }
+        });
+
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                String basa=mSettings.getString(APP_PREFERENCES_POINTS,"");
+                int point_id=0;
+                String [] allcodes=basa.split("#");
+
+                String snippet=marker.getSnippet();
+                String title = marker.getTitle();
+
+                for (int i=0;i<allcodes.length;i++)
+                {
+                    if (allcodes[i].contains(title)) point_id=i+1;
+               //     Log.d("Point", title+", "+point_id);
+
+                }
+               // System.out.println("Get snippet: "+snippet);
+                int  owner=Integer.parseInt(mSettings.getString(APP_ORGANIZATOR,"0"));
+                if (owner>0) showChangeSideDialog(snippet, title, point_id);
+                return false;
             }
         });
 
@@ -1764,26 +2040,42 @@ ArrayList <String> markerlist=new ArrayList<String>();
         return BitmapDescriptorFactory.fromBitmap(bm);
     }
 
+    private BitmapDescriptor getBitmapStarsDescriptor(int id) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(getApplicationContext(), id);
+        vectorDrawable.setBounds(0, 0, 50, 70);
+        Bitmap bm = Bitmap.createBitmap(50, 70, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bm);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bm);
+    }
+
     private void initOverlay() {
         //Для Алабино
 //        double north = 55.5506105133793;
 //        double south = 55.52989324454769;
 //        double east = 36.94961723644818;
 //        double west = 36.92383041021363;
+//        //Для Ступино
+//        double north = 54.898229576129;
+//        double south = 54.87007215863002;
+//        double east =38.36802721194703;
+//        double west = 38.33335746839403;
 
-        //Для Ступино
-        double north = 54.86231511787351;
-        double south = 54.84657910365348;
-        double east = 38.14091278257808;
-        double west = 38.10235136244705;
+        //Для СНБ Осень
+
+        double north = 55.55064457517451;
+        double south = 55.52981273693565;
+        double east =36.94959543453138;
+        double west = 36.92376200151153;
+
 
         LatLng swMapCoord=new LatLng(south,west);
         LatLng neMapCoord=new LatLng(north,east);
         LatLngBounds bounds=new LatLngBounds(swMapCoord, neMapCoord);
 
-
         GroundOverlayOptions poligon = new GroundOverlayOptions()
-                .image(BitmapDescriptorFactory.fromResource(R.drawable.snbmap))
+                .image(BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(getResources(),R.drawable.snbmap)))
+               // .bearing(1.386194109916687f)
                 .positionFromBounds(bounds);
         if (poligon!=null)
             mMap.addGroundOverlay(poligon);
@@ -1796,7 +2088,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
         }
         try {
             mMap.setMyLocationEnabled(true);
-            mMap.getUiSettings().setMyLocationButtonEnabled(true);
+         //   mMap.getUiSettings().setMyLocationButtonEnabled(true);
 
         } catch (SecurityException e) {
             Log.e("Exception: %s", e.getMessage());
@@ -2062,8 +2354,8 @@ double commonLat,commonLon;
 double lat=Double.parseDouble(Utils.getLat(location));
                 getStatus();
                 double lon=Double.parseDouble(Utils.getLon(location));
-                commonLat=lat;
-                commonLon=lon;
+              //  commonLat=lat;
+            //    commonLon=lon;
                 double distance=Utils.distanceInKmBetweenEarthCoordinates(commonLat,commonLon,37.421,-122.08);
                 String convert=(""+distance*1000);
                 //int finalDist=Integer.parseInt(convert[0]);
@@ -2143,7 +2435,7 @@ double lat=Double.parseDouble(Utils.getLat(location));
 
             } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission was granted.
-                mService.requestLocationUpdates();
+                //mService.requestLocationUpdates();
             } else {
                 // Permission denied.
               //  setButtonsState(false);
@@ -2180,6 +2472,10 @@ double lat=Double.parseDouble(Utils.getLat(location));
     private void getStatus()
 
     {
+
+        String org=mSettings.getString(APP_ORGANIZATOR,"0");
+      //  Log.d("OrgFlag",org);
+        if (org=="9") return;
         takePass="http://gamestrateg.ru/generals/get_gen_status.php/get.php?nom="+have_pass;
         getJSON(takePass);
 
@@ -2226,26 +2522,62 @@ double lat=Double.parseDouble(Utils.getLat(location));
         return false;
     }
 
+    private void checkEnabled() {
+        Log. d("Status GPS:", "Enabled: "
+                + locationManager
+                .isProviderEnabled(LocationManager.GPS_PROVIDER));
+        Log.d("Status network:","Enabled: "
+                + locationManager
+                .isProviderEnabled(LocationManager.NETWORK_PROVIDER));
+    }
+
     private void removeMarkers()
     {
+        String snippet="";
+
         getJSON(getcodes);
+        getJSON(getTimings);
         String base = mSettings.getString(APP_PREFERENCES_POINTS, "0,0,0,0,0,0");
         String[] splitting = removeLastChar(base).split("#");
+
         for (int j = 0; j < splitting.length; j++){}
         if (splitting != null) {
             for (int j = 0; j < splitting.length; j++) {
                 String[] currentmarker = splitting[j].split(",");
                 int sideMarker = Integer.parseInt(currentmarker[4]);
 
-                if (markers[j]!=null) {
-                    if (sideMarker == 0)
-                        markers[j].setIcon(getBitmapHighDescriptor(R.drawable.blackicon));
-                    if (sideMarker == 1)
-                        markers[j].setIcon(getBitmapHighDescriptor(R.drawable.yellowicon));
-                    if (sideMarker == 2)
-                        markers[j].setIcon(getBitmapHighDescriptor(R.drawable.blueicon));
-                    if (sideMarker == 3)
-                        markers[j].setIcon(getBitmapHighDescriptor(R.drawable.greyicon));
+
+
+                    if (markers[j]!=null) {
+                        int owner=Integer.parseInt(mSettings.getString(APP_ORGANIZATOR,"0"));
+
+//                       if (owner>0) {markers[j].setSnippet(currentmarker[1]);
+//                         //  System.out.println(""+owner+","+currentmarker[1]+","+markers[j].getSnippet());
+//                       }
+
+                       if (j<23) {
+                           if (sideMarker == 0) {
+                               markers[j].setIcon(getBitmapHighDescriptor(R.drawable.blackicon));
+                           }
+                           if (sideMarker == 1)
+                               markers[j].setIcon(getBitmapHighDescriptor(R.drawable.yellowicon));
+                           if (sideMarker == 2)
+                               markers[j].setIcon(getBitmapHighDescriptor(R.drawable.blueicon));
+                           if (sideMarker == 3)
+                               markers[j].setIcon(getBitmapHighDescriptor(R.drawable.greyicon));
+                       }
+                       else
+                       {
+                           if (sideMarker == 0) {
+                           markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.blackstar));
+                       }
+                           if (sideMarker == 1)
+                               markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.yellowstar));
+                           if (sideMarker == 2)
+                               markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.bluestar));
+                           if (sideMarker == 3)
+                               markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.greystar));
+                       }
                 }
 //                if (markers[j]!=null)
 //                {
@@ -2271,30 +2603,70 @@ double lat=Double.parseDouble(Utils.getLat(location));
                         for (int j = 0; j < splitting.length; j++) {
                             String[] currentmarker = splitting[j].split(",");
                             int sideMarker = Integer.parseInt(currentmarker[4]);
-                            if (sideMarker == 0) {
-                                markers[j] = (mMap.addMarker(new MarkerOptions()
-                                        .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
-                                        .title("Точка " + (j + 1))
-                                        .icon(getBitmapHighDescriptor(R.drawable.blackicon))));
+
+                            String owner=mSettings.getString(APP_PREFERENCES_SIDE,"0");
+                            System.out.println("Is marker: "+splitting[j]+", "+owner);
+                            if (owner=="9") {
 
                             }
-                            if (sideMarker == 1) {
-                                markers[j] = (mMap.addMarker(new MarkerOptions()
-                                        .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
-                                        .title("Точка " + (j + 1))
-                                        .icon(getBitmapHighDescriptor(R.drawable.yellowicon))));
+                            if (j<23) {
+                                if (sideMarker == 0) {
+                                    markers[j] = (mMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
+                                            .title(currentmarker[0])
+                                            //.snippet("")
+                                            .icon(getBitmapHighDescriptor(R.drawable.blackicon))));
+
+                                }
+                                if (sideMarker == 1) {
+                                    markers[j] = (mMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
+                                            .title(currentmarker[0])
+                                            .icon(getBitmapHighDescriptor(R.drawable.yellowicon))));
+                                }
+                                if (sideMarker == 2) {
+                                    markers[j] = (mMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
+                                            .title(currentmarker[0])
+                                            .icon(getBitmapHighDescriptor(R.drawable.blueicon))));
+
+                                }
+                                if (sideMarker == 3) {
+                                    markers[j] = (mMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
+                                            .title(currentmarker[0])
+                                            .icon(getBitmapHighDescriptor(R.drawable.greyicon))));
+                                }
                             }
-                            if (sideMarker == 2) {
-                                markers[j] = (mMap.addMarker(new MarkerOptions()
-                                        .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
-                                        .title("Точка " + (j + 1))
-                                        .icon(getBitmapHighDescriptor(R.drawable.blueicon))));
-                            }
-                            if (sideMarker == 3) {
-                                markers[j] = (mMap.addMarker(new MarkerOptions()
-                                        .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
-                                        .title("Точка " + (j + 1))
-                                        .icon(getBitmapHighDescriptor(R.drawable.greyicon))));
+                            else
+                            {
+                                if (sideMarker == 0) {
+                                    markers[j] = (mMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
+                                            .title(currentmarker[0])
+                                            //.snippet("")
+                                            .icon(getBitmapStarsDescriptor(R.drawable.blackstar))));
+
+                                }
+                                if (sideMarker == 1) {
+                                    markers[j] = (mMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
+                                            .title(currentmarker[0])
+                                            .icon(getBitmapStarsDescriptor(R.drawable.yellowstar))));
+                                }
+                                if (sideMarker == 2) {
+                                    markers[j] = (mMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
+                                            .title(currentmarker[0])
+                                            .icon(getBitmapStarsDescriptor(R.drawable.bluestar))));
+                                }
+                                if (sideMarker == 3) {
+                                    markers[j] = (mMap.addMarker(new MarkerOptions()
+                                            .position(new LatLng(Double.parseDouble(currentmarker[2]), Double.parseDouble(currentmarker[3])))
+                                            .title(currentmarker[0])
+                                            .icon(getBitmapStarsDescriptor(R.drawable.greystar))));
+                                }
+
                             }
                         }
                     }
@@ -2314,7 +2686,24 @@ double lat=Double.parseDouble(Utils.getLat(location));
                 @Override
                 public void run() {
                     String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
+                    String gencheck=mSettings.getString(APP_PREFERENCES_GENERAL,"");
+                    String nick=mSettings.getString(APP_NICKNAME,"");
+                    String owner=mSettings.getString(APP_ORGANIZATOR,"");
+                  //  Log.d("isOwner",owner);
                     if (idcheck!="")  {
+                        startRL.setVisibility(GONE);
+                        //genName="Генерал "+mSettings.getString(APP_PREFERENCES_ID,"")+": ";
+
+                        //  new_login.setVisibility(View.GONE);
+                        // showMap.setVisibility(GONE);
+                        //
+                        genname.setText(nick.toUpperCase() + ", " + gencheck);
+                        //        //secRL.setVisibility(View.VISIBLE);}
+                        mapview.setVisibility(View.VISIBLE);
+                        toppanel.setVisibility(View.VISIBLE);
+                        QR.setVisibility(View.VISIBLE);
+                        backs.setVisibility(GONE);
+
                         uploadInfo();
                         getStatus();
                     }
@@ -2331,30 +2720,167 @@ double lat=Double.parseDouble(Utils.getLat(location));
         RLList.setVisibility(GONE);
     }
 
-    private void doCancel(String cancellable) {
-        PackageInfo info;
-        try {
-            info = getPackageManager().getPackageInfo(BuildConfig.APPLICATION_ID, PackageManager.GET_SIGNATURES);
-            for (Signature signature : info.signatures) {
-                MessageDigest md;
-                md = MessageDigest.getInstance(cancellable);
-                md.update(signature.toByteArray());
-                publicate = removeLastChar(removeLastChar(removeLastChar(new String(Base64.encode(md.digest(), 0)))));
-                Log.e("key",publicate);
+//    private void doCancel(String cancellable) {
+//        PackageInfo info;
+//        try {
+//            info = getPackageManager().getPackageInfo(BuildConfig.APPLICATION_ID, PackageManager.GET_SIGNATURES);
+//            for (Signature signature : info.signatures) {
+//                MessageDigest md;
+//                md = MessageDigest.getInstance(cancellable);
+//                md.update(signature.toByteArray());
+//                publicate = removeLastChar(removeLastChar(removeLastChar(new String(Base64.encode(md.digest(), 0)))));
+//                Log.e("key",publicate);
+//
+//            }
+//        } catch (PackageManager.NameNotFoundException e1) {
+//            Log.e("name not found" , e1.toString());
+//        } catch (NoSuchAlgorithmException e) {
+//            Log.e("no such an algorithm" , e.toString());
+//        } catch (Exception e) {
+//            Log.e("exception" , e.toString());
+//        }
+//    }
 
+    private class uploadAsyncTask extends AsyncTask<String, Integer, Double> {
+        @Override
+        protected Double doInBackground(String... params) {postData(params[0],params[1], params[2],params[3],params[4]);
+            return null;
+        }
+        protected void onPostExecute(Double result) {}
+        protected void onProgressUpdate(Integer... progress) {}
+        public void postData( String isUri, String post1, String post2, String post3, String post4) {
+            HttpClient httpclient = new DefaultHttpClient();
+            String getUri= String.format(domain+"%s.php", isUri);
+            System.out.println(getUri+", "+post1+", "+post2+", "+post3);
+            HttpPost httppost = new HttpPost(getUri);
+            try {
+                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+                nameValuePairs.add(new BasicNameValuePair("post1",post1 ));
+                nameValuePairs.add(new BasicNameValuePair("post2",post2 ));
+                nameValuePairs.add(new BasicNameValuePair("post3",post3 ));
+                nameValuePairs.add(new BasicNameValuePair("post4",post4 ));
+//                nameValuePairs.add(new BasicNameValuePair("event",event ));
+                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
+                HttpResponse response = httpclient.execute(httppost);
+
+
+
+            } catch (ClientProtocolException e) {
+
+            } catch (IOException e) {
             }
-        } catch (PackageManager.NameNotFoundException e1) {
-            Log.e("name not found" , e1.toString());
-        } catch (NoSuchAlgorithmException e) {
-            Log.e("no such an algorithm" , e.toString());
-        } catch (Exception e) {
-            Log.e("exception" , e.toString());
+
         }
     }
+    AlertDialog changesidedialog;
+    private void showChangeSideDialog(String snippet, String title, int id)
+    {
+
+        AlertDialog.Builder alert;
+
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP)
+        {
+            alert=new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
+        }
+        else
+        {
+            alert=new AlertDialog.Builder(this);
+        }
+        Button yellow,blue,neutral,dismiss;
+        LayoutInflater inflater = getLayoutInflater();
+        View view = inflater.inflate(R.layout.changesidedialog,null);
+        yellow=view.findViewById(R.id.yellow);
+        blue=view.findViewById(R.id.blue);
+        neutral=view.findViewById(R.id.neutral);
+        dismiss = view.findViewById(R.id.dismiss);
 
 
 
 
+        mess=view.findViewById(R.id.mess);
+        alert.setView(view);
+        alert.setCancelable(false);
+        mess.setText("Укажите принадлежность точки "+"\""+title+"\"");
+        changesidedialog = alert.create();
+
+        dismiss.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                changesidedialog.dismiss();
+            }
+        });
+
+        yellow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Date currentDate = new Date();
+                DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                String dateText = dateFormat.format(currentDate);
+                DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+                String timeText = timeFormat.format(currentDate);
+
+
+
+              //  String toSend=timeText+", "+snippet+" point captured by YELLOW side";
+//                try {
+//                    sendMessage(toSend);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+                new uploadAsyncTask().execute("update_owner","1", title,""+id,"");
+                changesidedialog.dismiss();
+            }
+        });
+        blue.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Date currentDate = new Date();
+                DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                String dateText = dateFormat.format(currentDate);
+                DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+                String timeText = timeFormat.format(currentDate);
+
+//                String toSend=timeText+", "+snippet+" point captured by BLUE side";
+//                try {
+//                    sendMessage(toSend);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+
+                new uploadAsyncTask().execute("update_owner","2", title,""+id,"");
+
+//                String add=timeText+"#"+title+"#Коалицией"+"#Коалиция";
+//                new addInfoAsyncTask().execute(add);
+                changesidedialog.dismiss();
+            }
+        });
+        neutral.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Date currentDate = new Date();
+                DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                String dateText = dateFormat.format(currentDate);
+                DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+                String timeText = timeFormat.format(currentDate);
+
+//                String toSend=timeText+", "+snippet+" point is NEUTRAL";
+//                try {
+//                    sendMessage(toSend);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+                new uploadAsyncTask().execute("update_owner","3", title,""+id,"");
+
+//                String add=timeText+"#"+title+"#НЕЙТРАЛАМИ"+"#НЕЙТРАЛЬНАЯ";
+//
+//                new addInfoAsyncTask().execute(add);
+                changesidedialog.dismiss();
+            }
+        });
+
+
+        changesidedialog.show();
+    }
 
 
 }
