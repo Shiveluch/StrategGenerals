@@ -262,7 +262,7 @@ String addcoord="http://gamestrateg.ru/generals/update_coord.php";
 
     @Override
     public void onDestroy() {
-        mServiceHandler.removeCallbacksAndMessages(null);
+      //  mServiceHandler.removeCallbacksAndMessages(null);
         System.out.println("SERVICE STOPPED");
     }
 

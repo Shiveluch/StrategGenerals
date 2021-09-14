@@ -112,7 +112,9 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
     String addtolog = "http://gamestrateg.ru/generals/add_tolog.php";
     String add_taken = "http://gamestrateg.ru/generals/add_takens.php";
     String getTaken = "http://gamestrateg.ru/generals/get_taken.php";
+    String getPersonal="";
     String matter = "";
+    public String takenSide="";
     String getLastfromLog = "";
     String isMarker;
     String getTime = "";
@@ -125,7 +127,6 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
     String getCount = "";
     String publicate = "";
     String getSize = "http://gamestrateg.ru/generals/get_points_size.php";
-    String message = "";
     String takePass = "";
     String killStatus = "";
     String updateStatus = "";
@@ -152,12 +153,14 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
     SupportMapFragment mapFragment;
     SharedPreferences mSettings;
     boolean showComonList = false;
+    boolean isStart=false;
     public static final String APP_PREFERENCES = "mysettings";//filename
     public static final String APP_PREFERENCES_INFO = "INFO";//player's INFO
     public static final String APP_PREFERENCES_PASSWORD = "Password";//player's system password
     public static final String APP_PREFERENCES_CODES = "Codes";//player's point codes
     public static final String APP_PREFERENCES_ID = "Taken";//player's taken points
     public static final String APP_PREFERENCES_TAKEN = "CodesOfTakenPoints";//player's taken points
+    public static final String APP_PREFERENCES_CONTROL="ControlPoints";
     public static final String APP_PREFERENCES_GENERAL = "General";
     public static final String APP_PREFERENCES_SIDE = "Side";
     public static final String APP_ORGANIZATOR = "Organizator";
@@ -190,7 +193,7 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
     Button new_login, QRScan, send, sendlog;
     boolean check = false;
     public String have_pass;
-    ImageView cenmap, backs, finger, QR, selflog, commonlog, upload, exit;
+    ImageView cenmap, backs, finger, QR, selflog, commonlog, upload, exit, restart;
     LinearLayout toppanel;
     ListView list;
     // ExpandableListView listView;
@@ -353,26 +356,29 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
                 LocationManager.NETWORK_PROVIDER, 1000 * 3, 10,
                 locationListener);
         checkEnabled();
+        getJSON(getControl);
+
         getJSON(getSize);
         isMarker=(mSettings.getString(APP_TO_BASA,"")).replace('#','.');
-        uploadInfo();
-        String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
-        String gencheck=mSettings.getString(APP_PREFERENCES_GENERAL,"");
-        String nick=mSettings.getString(APP_NICKNAME,"");
-        if (idcheck!="") {
-            startRL.setVisibility(GONE);
-            //genName="Генерал "+mSettings.getString(APP_PREFERENCES_ID,"")+": ";
-
-            //  new_login.setVisibility(View.GONE);
-            // showMap.setVisibility(GONE);
-            //
-            genname.setText(nick.toUpperCase() + ", " + gencheck);
-            //        //secRL.setVisibility(View.VISIBLE);}
-            mapview.setVisibility(View.VISIBLE);
-            toppanel.setVisibility(View.VISIBLE);
-            QR.setVisibility(View.VISIBLE);
-            backs.setVisibility(GONE);
-        }
+      //  uploadInfo();
+        idCheck();
+//        String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
+//        String gencheck=mSettings.getString(APP_PREFERENCES_GENERAL,"");
+//        String nick=mSettings.getString(APP_NICKNAME,"");
+//        if (idcheck!="") {
+//            startRL.setVisibility(GONE);
+//            //genName="Генерал "+mSettings.getString(APP_PREFERENCES_ID,"")+": ";
+//
+//            //  new_login.setVisibility(View.GONE);
+//            // showMap.setVisibility(GONE);
+//            //
+//            genname.setText(nick.toUpperCase() + ", " + gencheck);
+//            //        //secRL.setVisibility(View.VISIBLE);}
+//            mapview.setVisibility(View.VISIBLE);
+//            toppanel.setVisibility(View.VISIBLE);
+//            QR.setVisibility(View.VISIBLE);
+//            backs.setVisibility(GONE);
+//        }
       //  getMarkers();
         //markers
 //        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
@@ -443,15 +449,17 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
         sendlog=findViewById(R.id.sendlog);
         list=findViewById(R.id.list);
         QR=findViewById(R.id.qr);
+        restart = findViewById(R.id.restart);
         mSettings = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
         String org=mSettings.getString(APP_PREFERENCES_ID,"0");
      //   Log.d("OrgFlagID","Is org: "+org);
 
         int controls=Integer.parseInt(mSettings.getString(APP_IS_CONTROL,"0"));
 
-        if (controls==0) {getJSON(getControl);}
-
+        //if (controls==0) {getJSON(getControl);}
+        getJSON(getControl);
         removeMarkers();
+        idCheck();
         have_pass = mSettings.getString(APP_PREFERENCES_PASSWORD, "");
         String info = mSettings.getString(APP_PREFERENCES_INFO, "");
         String points=mSettings.getString(APP_PREFERENCES_CODES,"");
@@ -484,7 +492,7 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
         mTimer = new Timer();
         myTimerTask = new MyTimerTask();
         mTimer.schedule(myTimerTask, 1000,4000);
-        getJSON(getControl);
+        //getJSON(getControl);
         selflog.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -492,6 +500,9 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
                 showlist=!showlist;
                 if (showlist) RLList.setVisibility(View.VISIBLE);
                 if (!showlist) RLList.setVisibility(View.GONE);
+                getPersonal=domain+"get_personal_events.php/get.php?nom="+mSettings.getString(APP_PREFERENCES_SIDE,"");
+                getJSON(getPersonal);
+
             }
         });
 
@@ -499,7 +510,7 @@ public class Login extends AppCompatActivity implements OnMapReadyCallback {
             @Override
             public void onClick(View v) {
                 if (isOnline(getApplicationContext())) {
-                    uploadInfo();
+                //    uploadInfo();
 
                     try {
                         Thread.sleep(2000);
@@ -580,6 +591,7 @@ finger.setOnClickListener(new View.OnClickListener() {
         showMap.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                getJSON(getControl);
 
                 if (!checkPermissions()) {
                     requestPermissions();
@@ -623,7 +635,9 @@ finger.setOnClickListener(new View.OnClickListener() {
     //        //secRL.setVisibility(View.VISIBLE);}
             mapview.setVisibility(View.VISIBLE);
             toppanel.setVisibility(View.VISIBLE);
-            QR.setVisibility(View.VISIBLE);
+            int side=Integer.parseInt(mSettings.getString(APP_PREFERENCES_SIDE,"0"));
+            if (side<9)QR.setVisibility(View.VISIBLE);
+            if (side==9)restart.setVisibility(View.VISIBLE);
             backs.setVisibility(GONE);
         }
         String taken=mSettings.getString(APP_PREFERENCES_TAKEN,"");
@@ -636,11 +650,12 @@ finger.setOnClickListener(new View.OnClickListener() {
                     if (finalString.length>1){
                         String toArray =
                                 finalString[1] + " взята\n" + finalString[3] + " в " + finalString[4];
-                        get.add(0, toArray);}
-                    ArrayAdapter adapter = new ArrayAdapter(this,
-                            R.layout.list_item, get);
-//
-                    list.setAdapter(adapter);
+                       // get.add(0, toArray);
+                    }
+//                    ArrayAdapter adapter = new ArrayAdapter(this,
+//                            R.layout.list_item, get);
+////
+//                    list.setAdapter(adapter);
 
 //
 //                        }
@@ -648,10 +663,10 @@ finger.setOnClickListener(new View.OnClickListener() {
 
             }
 
-            ArrayAdapter adapter = new ArrayAdapter(this,
-                    R.layout.list_item, get);
-
-            list.setAdapter(adapter);
+//            ArrayAdapter adapter = new ArrayAdapter(this,
+//                    R.layout.list_item, get);
+//
+//            list.setAdapter(adapter);
         }
         String [] pointsarray=points.split("#");
 
@@ -690,6 +705,8 @@ finger.setOnClickListener(new View.OnClickListener() {
         new_login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                getJSON(getControl);
+
                 if (!checkPermissions()) {
                     requestPermissions();
                 }
@@ -727,10 +744,20 @@ finger.setOnClickListener(new View.OnClickListener() {
             }
         });
 
+        restart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+showRestartDialog();
+            }
+        });
+
         QR.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String owner=mSettings.getString(APP_PREFERENCES_SIDE,"");
+                String gen=mSettings.getString(APP_PREFERENCES_GENERAL,"");
+                String nick=mSettings.getString(APP_NICKNAME,"");
+                Log.d("DATA", gen+", "+nick);
                 if (isOnline()) {
                     invLog();
 
@@ -741,6 +768,7 @@ finger.setOnClickListener(new View.OnClickListener() {
 
                     integrator.setPrompt(" ");
                     integrator.setCameraId(0);
+                    integrator.setOrientationLocked(false);
 //                integrator.autoWide();
                     //         integrator.setBeepEnabled(false);
                     //     integrator.setBarcodeImageEnabled(false);
@@ -782,116 +810,162 @@ finger.setOnClickListener(new View.OnClickListener() {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        getJSON(getTaken);
-        String taken=mSettings.getString(APP_PREFERENCES_TAKEN,"");
-        String toBasa=mSettings.getString(APP_TO_BASA,"");
 
-        String basa=mSettings.getString(APP_PREFERENCES_POINTS,"");
-        String [] allcodes=basa.split("#");
-        boolean isCode=false;
-        SharedPreferences.Editor newedit =mSettings.edit();
-        newedit.putString(APP_IS_ONLINE,"0");
-        newedit.apply();
-        int takeDistance=9000000;
+        if (isOnline()) {
+            getJSON(getTaken);
+            String controlPoint=mSettings.getString(APP_PREFERENCES_CONTROL,"");
+            if (controlPoint.length()<1)
+            {
+                Toast.makeText(getApplicationContext(),"Не загружены стартовые данные", Toast.LENGTH_LONG).show();
+                return;
+            }
 
-        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+            String [] splitcontrol=controlPoint.split("#");
+            String isSide=mSettings.getString(APP_PREFERENCES_SIDE,"0");
 
-        if (result != null) {
-            if (result.getContents() == null) {
 
-            } else {
-                String new_codename = result.getContents();//получили код
-                for (int i=0;i<allcodes.length;i++)
-                {
-                    String [] currentcode=allcodes[i].split(",");
-                    if (currentcode[1].equals(new_codename))
+            String taken = mSettings.getString(APP_PREFERENCES_TAKEN, "");
+            String toBasa = mSettings.getString(APP_TO_BASA, "");
+
+            String basa = mSettings.getString(APP_PREFERENCES_POINTS, "");
+            String[] allcodes = basa.split("#");
+            boolean isCode = false;
+            SharedPreferences.Editor newedit = mSettings.edit();
+            newedit.putString(APP_IS_ONLINE, "0");
+            newedit.apply();
+            int takeDistance = 50;
+
+            IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+
+            if (result != null) {
+                if (result.getContents() == null) {
+
+                } else {
+                    String new_codename = result.getContents();//получили код
+                    Log.d("Taken", mSettings.getString(APP_PREFERENCES_CONTROL,""));
+
+                    for (int i=0;i<splitcontrol.length;i++)
                     {
-                        double takenLat=Double.parseDouble(currentcode[2]);
-                        double takenLon=Double.parseDouble(currentcode[3]);
-                        double distance=Utils.distanceInKmBetweenEarthCoordinates(commonLat,commonLon,takenLat,takenLon);
-                        String convert=(""+distance*1000);
-
-                        String [] split=convert.split("\\.");
-                        int finalDist=Integer.parseInt(split[0]);
-                        if (finalDist>takeDistance) Toast.makeText(getApplicationContext(),""+currentcode[0]+" не может быть взята, дистанция: "+finalDist + "метров",Toast.LENGTH_LONG).show();
-                        if (finalDist<=takeDistance)
+                        if (splitcontrol[i].contains(new_codename))
                         {
-                            // Текущее время
-                            Date currentDate = new Date();
-
-                            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.UK);
-                            String dateText = dateFormat.format(currentDate);
-                            DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.UK);
-                            String timeText = timeFormat.format(currentDate);
-                            String datetime=dateText+","+timeText;
-                            String cGen=mSettings.getString(APP_PREFERENCES_GENERAL,"");
-                            String cPoint=currentcode[0];
-                            String idPoint=currentcode[5];
-                            String cSide = mSettings.getString(APP_PREFERENCES_SIDE,"");
-                            String cId=mSettings.getString(APP_PREFERENCES_ID,"");
-                            String cTime=mSettings.getString(APP_PREFERENCES_TIME,"");
-
-                            String [] timesplit=cTime.split(",");
-                            double isBegin = 0;
-                            double isEnd=0 ;
-                            Date date1 = null, date2=null;
-                            SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.UK);
-
-                            try {
-
-                                date1 = formater.parse(timesplit[0]);
-                                date2= formater.parse(timesplit[1]);
-
-                                isBegin=date1.getTime();
-                                isEnd =date2.getTime();
+                            String[] getInfo = splitcontrol[i].split(",");
+                            if (Integer.parseInt(getInfo[1])==Integer.parseInt(isSide))
+                            {
+                                showDialog("Точка уже под контролем вашей стороны");
+                                return;
 
                             }
-                            catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                             double isDate=currentDate.getTime();
-                            // if (isBegin<isDate && isDate<isEnd)
-                             {
-                                 Toast.makeText(getApplicationContext(),cPoint+" взята",Toast.LENGTH_LONG).show();
-                                 taken=taken+cGen+","+cPoint+","+idPoint+","+datetime+","+cSide+","+cId+"#";
-                                 String inf=cPoint+ " взята\n" + dateText+ " в " + timeText;
-                                 get.add(0,inf);
-                                 ArrayAdapter adapter = new ArrayAdapter(this,
-                        R.layout.list_item, get);
-//
-                        list.setAdapter(adapter);
-                                SharedPreferences.Editor editor =mSettings.edit();
-                                editor.putString(APP_PREFERENCES_INFO,(inf+"#"));
-                                editor.putString(APP_PREFERENCES_TAKEN,(taken));
-                                editor.apply();
-                                String owner=mSettings.getString(APP_PREFERENCES_SIDE,"0");
 
-                              //  uploadInfo();
-                          //       Log.d("Side", "Check side: " + owner+", "+new_codename);
-                                 new uploadAsyncTask().execute("update_owner",owner, new_codename,""+i,"");
-                             }
+                            if (getInfo[2].equals("NULL")||getInfo[2].equals("null"))
+                            {
+                                getInfo[2]="60";
+                            }
+                            if (Integer.parseInt(getInfo[1])==3 && Integer.parseInt(getInfo[2])<60)
+                            {
+                                int diff=60-(Integer.parseInt(getInfo[2]));
+                                showDialog("Точка под контролем стороны Союз еще\n" + diff + " мин.");
+                                return;
+
+                            }
+                        }
+
+                    }
+
+
+                    for (int i = 0; i < allcodes.length; i++) {
+                        String[] currentcode = allcodes[i].split(",");
+                        if (currentcode[1].equals(new_codename)) {
+                            double takenLat = Double.parseDouble(currentcode[2]);
+                            double takenLon = Double.parseDouble(currentcode[3]);
+                            double distance = Utils.distanceInKmBetweenEarthCoordinates(commonLat, commonLon, takenLat, takenLon);
+                            String convert = ("" + distance * 1000);
+
+                            String[] split = convert.split("\\.");
+                            int finalDist = Integer.parseInt(split[0]);
+                            if (finalDist > takeDistance)
+                                Toast.makeText(getApplicationContext(), "" + currentcode[0] + " не может быть взята, дистанция: " + finalDist + "метров", Toast.LENGTH_LONG).show();
+                            if (finalDist <= takeDistance) {
+                                // Текущее время
+                                Date currentDate = new Date();
+
+                                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.UK);
+                                String dateText = dateFormat.format(currentDate);
+                                DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.UK);
+                                String timeText = timeFormat.format(currentDate);
+                                String datetime = dateText + "," + timeText;
+                                String cGen = mSettings.getString(APP_PREFERENCES_GENERAL, "");
+                                String cNick = mSettings.getString(APP_NICKNAME, "");
+                                String cPoint = currentcode[0];
+                                String idPoint = currentcode[5];
+                                String cSide = mSettings.getString(APP_PREFERENCES_SIDE, "");
+                                String cId = mSettings.getString(APP_PREFERENCES_ID, "");
+                                String cTime = mSettings.getString(APP_PREFERENCES_TIME, "");
+
+                                String[] timesplit = cTime.split(",");
+                                double isBegin = 0;
+                                double isEnd = 0;
+                                Date date1 = null, date2 = null;
+                                SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.UK);
+
+                                try {
+
+                                    date1 = formater.parse(timesplit[0]);
+                                    date2 = formater.parse(timesplit[1]);
+
+                                    isBegin = date1.getTime();
+                                    isEnd = date2.getTime();
+
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                double isDate = currentDate.getTime();
+                                // if (isBegin<isDate && isDate<isEnd)
+                                {
+                                    //Toast.makeText(getApplicationContext(), cPoint + " взята", Toast.LENGTH_LONG).show();
+                                    showDialog(cPoint + " взята");
+                                    taken = taken + cGen + "," + cPoint + "," + idPoint + "," + datetime + "," + cSide + "," + cId + "#";
+                                    updateGameLog(cGen, cPoint, idPoint,cSide,cId,cNick);
+                                    String inf = cPoint + " взята\n" + dateText + " в " + timeText;
+                                    get.add(0, inf);
+//                                    ArrayAdapter adapter = new ArrayAdapter(this,
+//                                            R.layout.list_item, get);
+////
+//                                    list.setAdapter(adapter);
+                                    SharedPreferences.Editor editor = mSettings.edit();
+                                    editor.putString(APP_PREFERENCES_INFO, (inf + "#"));
+                                    editor.putString(APP_PREFERENCES_TAKEN, (taken));
+                                    editor.apply();
+                                    String owner = mSettings.getString(APP_PREFERENCES_SIDE, "0");
+                                    int newid = i + 1;
+
+                                    //  uploadInfo();
+                                    //       Log.d("Side", "Check side: " + owner+", "+new_codename);
+                                    new uploadAsyncTask().execute("update_owner", owner, new_codename, "" + newid, "");
+                                }
 //                             else
 //                             {
 //                                 Toast.makeText(getApplicationContext(),"Время взятия истекло либо не наступило",Toast.LENGTH_LONG).show();
 //
 //                             }
+                            }
+                            isCode = true;
                         }
-                        isCode=true;
+
+                    }
+                    if (!isCode) {
+                        Toast.makeText(getApplicationContext(), "Информация о точке не найдена", Toast.LENGTH_LONG).show();
+
                     }
 
-                }
-                if (!isCode)
-                {
-                    Toast.makeText(getApplicationContext(),"Информация о точке не найдена",Toast.LENGTH_LONG).show();
 
                 }
-
-
+            } else {
+                // This is important, otherwise the result will not be passed to the fragment
+                super.onActivityResult(requestCode, resultCode, data);
             }
-        } else {
-            // This is important, otherwise the result will not be passed to the fragment
-            super.onActivityResult(requestCode, resultCode, data);
         }
+        else
+        { Toast.makeText(getApplicationContext(), "Нет подключения к интернету",Toast.LENGTH_LONG).show();}
 
     }
 
@@ -963,18 +1037,7 @@ finger.setOnClickListener(new View.OnClickListener() {
                         if (urlWebService==sbname)
 
                         {loadpassinfo(s);
-                            if (check==true)
-                            {
-                                startRL.setVisibility(GONE);
-                                mapview.setVisibility(View.VISIBLE);
-                                toppanel.setVisibility(View.VISIBLE);
-                                QR.setVisibility(View.VISIBLE);
-                                backs.setVisibility(GONE);
-                               // new_login.setVisibility(View.GONE);
 
-                            }
-                            if (check==false) {
-                            }
 
 
                         }
@@ -986,6 +1049,11 @@ finger.setOnClickListener(new View.OnClickListener() {
                         if (urlWebService==getEvents)
                         {
                             loadevents(s);
+                        }
+
+                        if (urlWebService==getPersonal)
+                        {
+                            loadPersonalEvents(s);
                         }
 
 
@@ -1055,11 +1123,12 @@ finger.setOnClickListener(new View.OnClickListener() {
                     String nick=mSettings.getString(APP_NICKNAME,"");
                     System.out.println(nick);
                     SharedPreferences.Editor editor=mSettings.edit();
-                    editor.putString(APP_PREFERENCES_ID,"9");
+                    editor.putString(APP_PREFERENCES_ID,"100");
                     editor.putString(APP_PREFERENCES_GENERAL,"Организатор");
                     editor.putString(APP_PREFERENCES_PASSWORD,first_password.getText().toString());
                     editor.putString(APP_IS_LOGIN,"1");
                     editor.putString(APP_ORGANIZATOR,"9");
+                    editor.putString(APP_PREFERENCES_SIDE,"9");
                     editor.apply();
                     genname.setText(nick.toUpperCase()+", " + mSettings.getString(APP_PREFERENCES_GENERAL,""));
                     have_pass=mSettings.getString(APP_PREFERENCES_PASSWORD,"");
@@ -1069,12 +1138,13 @@ finger.setOnClickListener(new View.OnClickListener() {
             startRL.setVisibility(GONE);
             mapview.setVisibility(View.VISIBLE);
             toppanel.setVisibility(View.VISIBLE);
-            QR.setVisibility(View.VISIBLE);
+            QR.setVisibility(View.GONE);
+            restart.setVisibility(View.VISIBLE);
             backs.setVisibility(GONE);
             //}
 
         }
-        getJSON(getControl);
+       // getJSON(getControl);
     }
 
 
@@ -1109,9 +1179,23 @@ return;
 //                }
                 if (gpass_s[i].equalsIgnoreCase(first_password.getText().toString())) {
                   check=true;
+                    if (check)
+                    {
+                        startRL.setVisibility(GONE);
+                        mapview.setVisibility(View.VISIBLE);
+                        toppanel.setVisibility(View.VISIBLE);
+                        int side=Integer.parseInt(mSettings.getString(APP_PREFERENCES_SIDE,"0"));
+                        if (side<9){QR.setVisibility(View.VISIBLE);restart.setVisibility(View.GONE);}
+                        if (side==9){restart.setVisibility(View.VISIBLE); QR.setVisibility(View.GONE);}
+
+                        backs.setVisibility(GONE);
+                        // new_login.setVisibility(View.GONE);
+
+                    }
+                    if (!check) {
+                    }
+
                     String nick=mSettings.getString(APP_NICKNAME,"");
-
-
                     SharedPreferences.Editor editor=mSettings.edit();
                     editor.putString(APP_PREFERENCES_ID,id_s[i]);
                     editor.putString(APP_PREFERENCES_GENERAL,gname_s[i]);
@@ -1122,7 +1206,6 @@ return;
                     if (gname_s[i].contains("Сер"))  editor.putString(APP_PREFERENCES_SIDE,"3");
                     editor.apply();
                     genname.setText(nick.toUpperCase()+", " + mSettings.getString(APP_PREFERENCES_GENERAL,""));
-
                     have_pass=mSettings.getString(APP_PREFERENCES_PASSWORD,"");
                   //  getJSON(codenames);
                     getJSON(getcodes);
@@ -1139,7 +1222,7 @@ return;
             }
 
         }
-        getJSON(getControl);
+       // getJSON(getControl);
     }
 
     private void toLog(String info) {
@@ -1181,6 +1264,10 @@ return;
                 blue_s[i] = obj.getString("blue");
                 grey_s[i] = obj.getString("grey");
                 control_s[i] = obj.getString("control");
+                if (yellow_s[i].equals("null")||yellow_s[i].equals("NULL")) yellow_s[i]="0";
+                if (blue_s[i].equals("null")||blue_s[i].equals("NULL")) blue_s[i]="0";
+                if (grey_s[i].equals("null")||grey_s[i].equals("NULL")) grey_s[i]="0";
+
                 yellow+=Integer.parseInt(yellow_s[i]);
                 blue+=Integer.parseInt(blue_s[i]);
                 grey+=Integer.parseInt(grey_s[i]);
@@ -1329,17 +1416,70 @@ return;
             editor.apply();
             }
 
-//                if (gpass_s[i].equals(first_password.getText().toString())) {
-//                    check = true;
-//                }
-
-            //}
             String basa=mSettings.getString(APP_PREFERENCES_POINTS,"");
             String [] allcodes=basa.split("#");
             for (int i=0;i<allcodes.length;i++)
             {
             }
             //getMarkers();
+            String base = mSettings.getString(APP_PREFERENCES_POINTS, "0,0,0,0,0,0");
+            String[] splitting = removeLastChar(base).split("#");
+
+            for (int j = 0; j < splitting.length; j++){}
+            if (splitting != null) {
+                for (int j = 0; j < splitting.length; j++) {
+                    String[] currentmarker = splitting[j].split(",");
+                    int sideMarker = Integer.parseInt(currentmarker[4]);
+
+
+
+                    if (markers[j]!=null) {
+                        int owner=Integer.parseInt(mSettings.getString(APP_ORGANIZATOR,"0"));
+
+//                       if (owner>0) {markers[j].setSnippet(currentmarker[1]);
+//                         //  System.out.println(""+owner+","+currentmarker[1]+","+markers[j].getSnippet());
+//                       }
+
+                        if (j<23) {
+                            if (sideMarker == 0) {
+                                markers[j].setIcon(getBitmapHighDescriptor(R.drawable.blackicon));
+                                markers[j].setTag("black");
+                            }
+                            if (sideMarker == 1)
+                            {markers[j].setIcon(getBitmapHighDescriptor(R.drawable.yellowicon));
+                            markers[j].setTag("yellow");}
+                            if (sideMarker == 2)
+                            {markers[j].setIcon(getBitmapHighDescriptor(R.drawable.blueicon));
+                            markers[j].setTag("blue");}
+                            if (sideMarker == 3)
+                            {  markers[j].setIcon(getBitmapHighDescriptor(R.drawable.greyicon));
+                            markers[j].setTag("grey");}
+                        }
+                        else
+                        {
+                            if (sideMarker == 0) {
+                                markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.blackstar));
+                                markers[j].setTag("black");
+                            }
+                            if (sideMarker == 1)
+                            {markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.yellowstar));
+                            markers[j].setTag("yellow");}
+                            if (sideMarker == 2)
+                            {markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.bluestar));
+                            markers[j].setTag("blue");}
+                            if (sideMarker == 3)
+                            {   markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.greystar));
+                            markers[j].setTag("grey");}
+                        }
+                    }
+//                if (markers[j]!=null)
+//                {
+//                    markers[j].setIcon();
+//                }
+                }
+            }
+
+
 
         }
     }
@@ -1451,34 +1591,17 @@ ArrayList <String> markerlist=new ArrayList<String>();
 //
                 JSONObject obj = jsonArray.getJSONObject(i);
                 control_s[i] = obj.getString("control");
-               int controlBase=Integer.parseInt(control_s[i].replace('.','0'));
-                int controlSoft=Integer.parseInt(getResources().getString(R.string.control).replace('.','0'));
-                if (controlBase!=controlSoft)
-                {
-                    editor.putString(APP_IS_CONTROL,"0");
-                    editor.putString(APP_PREFERENCES_ID,"");
-                    editor.apply();
-                    startRL.setVisibility(View.VISIBLE);
-                    mapview.setVisibility(GONE);
-                    new_login.setEnabled(false);
-                    showMap.setEnabled(false);
-                    new_login.setAlpha(0.3f);
-                    showMap.setAlpha(0.3f);
-
-                    Toast.makeText(getApplicationContext(),"Несовпадение версий",Toast.LENGTH_LONG).show();
-
+              if (!control_s[i].equals(getString(R.string.control)))
+              {
+                  Log.d("isControl", "Контроль не пройден");
+              if (!isStart)
+                  showResetAllDialog("Используется устаревшая версия, скачайте и установите новую версию");
+              isStart=true;
+                  //resetAll();
+              }
+              else
+              {Log.d("isControl", "Контроль пройден");}
                 }
-                if (controlBase==controlSoft) {
-                    editor.putString(APP_IS_CONTROL,"1");
-                    editor.apply();
-                }
-
-
-
-
-
-
-            }
 
         }
     }
@@ -1583,8 +1706,8 @@ ArrayList <String> markerlist=new ArrayList<String>();
     private void loadTime(String json) throws JSONException {
         JSONArray jsonArray = new JSONArray(json);
         if (jsonArray.length() == 0) {
-            message="Считан ошибочный код";
-                showDialog();
+
+                showDialog("Считан ошибочный код");
             Toast.makeText(getApplicationContext(),"Считан ошибочный код",Toast.LENGTH_SHORT).show();
         }
 
@@ -1626,16 +1749,16 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 String toArray=mSettings.getString(APP_PREFERENCES_GENERAL,"")+": " +name_s[0]+" взята "+dateText + " в " + timeText;
                 new AddAsyncTask().execute(toArray,code_s[0]);
            //     Toast.makeText(getApplicationContext(),toArray+", "+code_s[0],Toast.LENGTH_LONG).show();
-                get.add(0,toList);
-                ArrayAdapter adapter = new ArrayAdapter(this,
-                        R.layout.list_item, get);
-
-                list.setAdapter(adapter);
+//                get.add(0,toList);
+//                ArrayAdapter adapter = new ArrayAdapter(this,
+//                        R.layout.list_item, get);
+//
+//                list.setAdapter(adapter);
                 SharedPreferences.Editor editor=mSettings.edit();
                 editor.putString(APP_PREFERENCES_INFO,getInfo+summary);
                 editor.apply();
-                message="Точка захвачена";
-                    showDialog();
+
+                    showDialog("Точка захвачена");
             }
         }
     }
@@ -1643,7 +1766,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
     private void loadstatus(String json) throws JSONException {
         JSONArray jsonArray = new JSONArray(json);
         if (jsonArray.length() == 0) {
-            if (!mSettings.getString(APP_PREFERENCES_ID,"0").equals("9"))
+            if (!mSettings.getString(APP_PREFERENCES_SIDE,"0").equals("9"))
             mSettings.edit().clear().apply();
             first_password.setText("");
             secRL.setVisibility(GONE);
@@ -1664,7 +1787,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 if (status==0)
                 {
                     check=false;
-                    if (!mSettings.getString(APP_PREFERENCES_ID,"0").equals("9"))
+                    if (!mSettings.getString(APP_PREFERENCES_SIDE,"0").equals("9"))
                     mSettings.edit().clear().apply();
                     first_password.setText("");
                     mapview.setVisibility(GONE);
@@ -1696,34 +1819,32 @@ ArrayList <String> markerlist=new ArrayList<String>();
     private void loadTakenPoints(String json) throws JSONException {
         JSONArray jsonArray = new JSONArray(json);
         if (jsonArray.length() == 0){}
-        int take;
+        String take="";
+        String version=getString(R.string.control);
 
-        String[] code_s = new String[jsonArray.length()];
-        String[] name_s = new String[jsonArray.length()];
-        String[] taken_s = new String[jsonArray.length()];
+        String[] codename_s = new String[jsonArray.length()];
+        String[] status_s = new String[jsonArray.length()];
+        String[] control_s = new String[jsonArray.length()];
+        String[] diff_s = new String[jsonArray.length()];
 
 
         if (jsonArray.length() > 0) {
             for (int i = 0; i < jsonArray.length(); i++) {
 //
                 JSONObject obj = jsonArray.getJSONObject(i);
-                code_s[i] = obj.getString("code");
-                name_s[i] = obj.getString("name");
-                taken_s[i] = obj.getString("taken");
-                take=Integer.parseInt(taken_s[i]);
-                if (take==1)
-                {
+                codename_s[i] = obj.getString("codename");
+                status_s[i] = obj.getString("status");
+                control_s[i] = obj.getString("control");
+                diff_s[i] = obj.getString("diff");
+                take=take+codename_s[i]+","+status_s[i]+","+diff_s[i]+"#";
 
-                    String temp=mSettings.getString(APP_PREFERENCES_TAKEN,"");
-                    if (!temp.contains(code_s[i])) {
-                        SharedPreferences.Editor editor = mSettings.edit();
-                        editor.putString(APP_PREFERENCES_TAKEN, temp + code_s[i]);
-                        editor.apply();
-                    }
-                }
 
 
             }
+            SharedPreferences.Editor editor = mSettings.edit();
+            editor.putString(APP_PREFERENCES_CONTROL,take);
+            editor.apply();
+
 
         }
 
@@ -1751,17 +1872,12 @@ ArrayList <String> markerlist=new ArrayList<String>();
         public void postData(String value) {
             HttpClient httpclient = new DefaultHttpClient();
             HttpPost httppost = new HttpPost(addtolog);
+            System.out.println(addtolog+", "+value);
+
             try {
                 List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
 
                 nameValuePairs.add(new BasicNameValuePair("value",value ));
-//                nameValuePairs.add(new BasicNameValuePair("point",point));
-//                nameValuePairs.add(new BasicNameValuePair("point_id",idPoint));
-//                nameValuePairs.add(new BasicNameValuePair("date",date));
-//                nameValuePairs.add(new BasicNameValuePair("time",time ));
-//                nameValuePairs.add(new BasicNameValuePair("side",side ));
-//                nameValuePairs.add(new BasicNameValuePair("id",id ));
-
                 httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
                 HttpResponse response = httpclient.execute(httppost);
             } catch (ClientProtocolException e) {
@@ -1879,7 +1995,8 @@ ArrayList <String> markerlist=new ArrayList<String>();
         JSONArray jsonArray = new JSONArray(json);
         ArrayList <String> get=new ArrayList<>();
         if (jsonArray.length() == 0) {
-
+            ArrayAdapter adapter = new ArrayAdapter(this, R.layout.list_item, get);
+            genlist.setAdapter(adapter);
         }
 
 
@@ -1887,6 +2004,8 @@ ArrayList <String> markerlist=new ArrayList<String>();
         String[] point_s = new String[jsonArray.length()];
         String[] date_s = new String[jsonArray.length()];
         String[] time_s = new String[jsonArray.length()];
+        String[] side_s = new String[jsonArray.length()];
+        String[] generals_id_s = new String[jsonArray.length()];
         String[] nickname_s = new String[jsonArray.length()];
 
         if (jsonArray.length() > 0) {
@@ -1898,15 +2017,113 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 point_s[i] = obj.getString("point");
                 date_s[i] = obj.getString("date");
                 time_s[i] = obj.getString("time");
+                side_s[i] = obj.getString("side");
+                generals_id_s[i] = obj.getString("generals_id");
                 nickname_s[i] = obj.getString("nickname");
+                int isSide=Integer.parseInt(side_s[i]);
+                if (isSide<9)
+                {String toAdd=date_s[i]+ " " +time_s[i]+"\n"+
+                        "Позывной: "+nickname_s[i].toUpperCase()+",\nРоль: "+general_s[i]+":\n"+point_s[i]+" захвачена\n";
+                    get.add(0,toAdd);
+                }
+                if (isSide==9)
+                {
+                    int color=Integer.parseInt(generals_id_s[i]);
+                    String logColor="";
+                    switch (color) {
+                        case 100:
+                            logColor="переведена под контроль Единства";
+                            break;
+                        case 200:
+                            logColor="переведена под контроль  Коалиции";
+                            break;
+                        case 300:
+                            logColor="переведена под контроль Союза";
+                            break;
+                        case 400:
+                            logColor="нейтральная ";
+                            break;
+                    }
+                    String toAdd=date_s[i]+" "+time_s[i]+"\n"+ "Позывной: "+nickname_s[i].toUpperCase()+",\nРоль: "+general_s[i]+"\n"+point_s[i]+" "+logColor;
 
-                String toAdd="Позывной: "+nickname_s[i].toUpperCase()+",\nРоль: "+general_s[i]+":\n"+point_s[i]+" взята\n"+date_s[i]+ " в " +time_s[i];
+               //   String toAdd="Позывной: "+nickname_s[i].toUpperCase()+",\nРоль: "+general_s[i]+":\n"+point_s[i]+" "+logColor+" "+date_s[i]+ " в " +time_s[i];
+                    get.add(0,toAdd);
+                }
 
-                get.add(0,toAdd);
             }
 
             ArrayAdapter adapter = new ArrayAdapter(this, R.layout.list_item, get);
             genlist.setAdapter(adapter);
+
+        }
+    }
+
+
+    private void loadPersonalEvents(String json) throws JSONException {
+        JSONArray jsonArray = new JSONArray(json);
+        ArrayList <String> get=new ArrayList<>();
+        if (jsonArray.length() == 0) {
+            ArrayAdapter adapter = new ArrayAdapter(this, R.layout.list_item, get);
+            list.setAdapter(adapter);
+        }
+
+
+        String[] general_s = new String[jsonArray.length()];
+        String[] point_s = new String[jsonArray.length()];
+        String[] date_s = new String[jsonArray.length()];
+        String[] time_s = new String[jsonArray.length()];
+        String[] side_s = new String[jsonArray.length()];
+        String[] generals_id_s = new String[jsonArray.length()];
+        String[] nickname_s = new String[jsonArray.length()];
+
+        if (jsonArray.length() > 0) {
+            for (int i = 0; i < jsonArray.length(); i++) {
+//
+                JSONObject obj = jsonArray.getJSONObject(i);
+
+                general_s[i] = obj.getString("general");
+                point_s[i] = obj.getString("point");
+                date_s[i] = obj.getString("date");
+                time_s[i] = obj.getString("time");
+                side_s[i] = obj.getString("side");
+                generals_id_s[i] = obj.getString("generals_id");
+                nickname_s[i] = obj.getString("nickname");
+                int isSide=Integer.parseInt(side_s[i]);
+                if (isSide<9 && generals_id_s[i].equals(mSettings.getString(APP_PREFERENCES_ID,"")))
+                {String toAdd=date_s[i]+ " " +time_s[i]+":\n"+
+                        " захвачена "+point_s[i];
+                    get.add(0,toAdd);
+
+                }
+                if (isSide==9)
+                {
+                    int color=Integer.parseInt(generals_id_s[i]);
+                    String logColor="";
+                    switch (color) {
+                        case 100:
+                            logColor="переведена под контроль Единства";
+                            break;
+                        case 200:
+                            logColor="переведена под контроль  Коалиции";
+                            break;
+                        case 300:
+                            logColor="переведена под контроль Союза";
+                            break;
+                        case 400:
+                            logColor="нейтральная ";
+                            break;
+                    }
+                    String toAdd=date_s[i]+" "+time_s[i]+"\n"
+                            + "Позывной: "+nickname_s[i].toUpperCase()+"\n"+point_s[i]+" "+logColor;
+
+                    //   String toAdd="Позывной: "+nickname_s[i].toUpperCase()+",\nРоль: "+general_s[i]+":\n"+point_s[i]+" "+logColor+" "+date_s[i]+ " в " +time_s[i];
+                    get.add(0,toAdd);
+                }
+
+            }
+
+            ArrayAdapter adapter = new ArrayAdapter(this, R.layout.list_item, get);
+            list.setAdapter(adapter);
 
         }
     }
@@ -1958,10 +2175,26 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 String basa=mSettings.getString(APP_PREFERENCES_POINTS,"");
                 int point_id=0;
                 String [] allcodes=basa.split("#");
-
                 String snippet=marker.getSnippet();
                 String title = marker.getTitle();
+                double distance=0;
+                if (imhere!=null) {
+                    for (int i=0;i<allcodes.length;i++)
+                    {
+                        if (allcodes[i].contains(title))
+                        {
+                            String [] splitting=allcodes[i].split(",");
+                            Log.d("PointData", allcodes[i]);
+                            double lat=Double.parseDouble(splitting[2]);
+                            double lon=Double.parseDouble(splitting[3]);
+                            distance = Utils.distanceInKmBetweenEarthCoordinates(commonLat, commonLon, lat, lon);
+                            marker.setSnippet("Дистанция: "+String.format("%.0f", (distance*1000))+ " м.");
 
+                        }
+
+
+                    }
+                }
                 for (int i=0;i<allcodes.length;i++)
                 {
                     if (allcodes[i].contains(title)) point_id=i+1;
@@ -1970,7 +2203,8 @@ ArrayList <String> markerlist=new ArrayList<String>();
                 }
                // System.out.println("Get snippet: "+snippet);
                 int  owner=Integer.parseInt(mSettings.getString(APP_ORGANIZATOR,"0"));
-                if (owner>0) showChangeSideDialog(snippet, title, point_id);
+
+                if (owner>0) showChangeSideDialog(marker, title, point_id);
                 return false;
             }
         });
@@ -2225,7 +2459,22 @@ ArrayList <String> markerlist=new ArrayList<String>();
 
 
     private void deleteAppData() {
-        try {
+        mSettings.edit().clear().apply();
+        startRL.setVisibility(View.VISIBLE);
+        genname.setText("");
+        mapview.setVisibility(GONE);
+        toppanel.setVisibility(View.GONE);
+        QR.setVisibility(View.GONE);
+        backs.setVisibility(View.VISIBLE);
+        dialog.dismiss();
+
+
+    }
+
+    private void resetAll()
+    {
+        Toast.makeText(getApplicationContext(),"Несовпадение версий", Toast.LENGTH_LONG).show();
+                try {
             // clearing app data
             String packageName = getApplicationContext().getPackageName();
             Runtime runtime = Runtime.getRuntime();
@@ -2236,7 +2485,7 @@ ArrayList <String> markerlist=new ArrayList<String>();
         }
     }
 
-    private void showDialog()
+    private void showDialog(String message)
     {
 
         AlertDialog.Builder alert;
@@ -2266,11 +2515,86 @@ ArrayList <String> markerlist=new ArrayList<String>();
         dialog.show();
     }
 
-    private void showResetDialog()
+    private void showResetAllDialog(String message)
     {
 
         AlertDialog.Builder alert;
         AlertDialog dialog;
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP)
+        {
+            alert=new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
+        }
+        else
+        {
+            alert=new AlertDialog.Builder(this);
+        }
+        LayoutInflater inflater = getLayoutInflater();
+        View view = inflater.inflate(R.layout.dialogue,null);
+        approve=view.findViewById(R.id.approve);
+        mess=view.findViewById(R.id.mess);
+        alert.setView(view);
+        alert.setCancelable(false);
+        mess.setText(message);
+        dialog = alert.create();
+
+        approve.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                resetAll();
+                dialog.dismiss();}
+        });
+
+        dialog.show();
+    }
+
+    AlertDialog dialog;
+    AlertDialog restartdialog;
+
+    private void showRestartDialog()
+    {
+
+        AlertDialog.Builder alert;
+        Button restart, cancel;
+
+
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP)
+        {
+            alert=new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
+        }
+        else
+        {
+            alert=new AlertDialog.Builder(this);
+        }
+        LayoutInflater inflater = getLayoutInflater();
+        View view = inflater.inflate(R.layout.orgresetdialog,null);
+        restart=view.findViewById(R.id.approve);
+        cancel=view.findViewById(R.id.cancel);
+        alert.setView(view);
+        alert.setCancelable(false);
+        restartdialog = alert.create();
+
+        cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {restartdialog.dismiss();}
+        });
+
+        restart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new uploadAsyncTask().execute("reset_option",mSettings.getString(APP_PREFERENCES_PASSWORD,"0"),"","","");
+                restartdialog.dismiss();
+            }
+        });
+
+        restartdialog.show();
+    }
+
+
+    private void showResetDialog()
+    {
+
+        AlertDialog.Builder alert;
+
         if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP)
         {
             alert=new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
@@ -2534,59 +2858,9 @@ double lat=Double.parseDouble(Utils.getLat(location));
     private void removeMarkers()
     {
         String snippet="";
-
+        getJSON(getControl);
         getJSON(getcodes);
         getJSON(getTimings);
-        String base = mSettings.getString(APP_PREFERENCES_POINTS, "0,0,0,0,0,0");
-        String[] splitting = removeLastChar(base).split("#");
-
-        for (int j = 0; j < splitting.length; j++){}
-        if (splitting != null) {
-            for (int j = 0; j < splitting.length; j++) {
-                String[] currentmarker = splitting[j].split(",");
-                int sideMarker = Integer.parseInt(currentmarker[4]);
-
-
-
-                    if (markers[j]!=null) {
-                        int owner=Integer.parseInt(mSettings.getString(APP_ORGANIZATOR,"0"));
-
-//                       if (owner>0) {markers[j].setSnippet(currentmarker[1]);
-//                         //  System.out.println(""+owner+","+currentmarker[1]+","+markers[j].getSnippet());
-//                       }
-
-                       if (j<23) {
-                           if (sideMarker == 0) {
-                               markers[j].setIcon(getBitmapHighDescriptor(R.drawable.blackicon));
-                           }
-                           if (sideMarker == 1)
-                               markers[j].setIcon(getBitmapHighDescriptor(R.drawable.yellowicon));
-                           if (sideMarker == 2)
-                               markers[j].setIcon(getBitmapHighDescriptor(R.drawable.blueicon));
-                           if (sideMarker == 3)
-                               markers[j].setIcon(getBitmapHighDescriptor(R.drawable.greyicon));
-                       }
-                       else
-                       {
-                           if (sideMarker == 0) {
-                           markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.blackstar));
-                       }
-                           if (sideMarker == 1)
-                               markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.yellowstar));
-                           if (sideMarker == 2)
-                               markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.bluestar));
-                           if (sideMarker == 3)
-                               markers[j].setIcon(getBitmapStarsDescriptor(R.drawable.greystar));
-                       }
-                }
-//                if (markers[j]!=null)
-//                {
-//                    markers[j].setIcon();
-//                }
-            }
-            }
-
-
     }
 
 
@@ -2688,6 +2962,7 @@ double lat=Double.parseDouble(Utils.getLat(location));
                     String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
                     String gencheck=mSettings.getString(APP_PREFERENCES_GENERAL,"");
                     String nick=mSettings.getString(APP_NICKNAME,"");
+                    int side=Integer.parseInt(mSettings.getString(APP_PREFERENCES_SIDE,"0"));
                     String owner=mSettings.getString(APP_ORGANIZATOR,"");
                   //  Log.d("isOwner",owner);
                     if (idcheck!="")  {
@@ -2701,10 +2976,11 @@ double lat=Double.parseDouble(Utils.getLat(location));
                         //        //secRL.setVisibility(View.VISIBLE);}
                         mapview.setVisibility(View.VISIBLE);
                         toppanel.setVisibility(View.VISIBLE);
-                        QR.setVisibility(View.VISIBLE);
+                        if (side<9) QR.setVisibility(View.VISIBLE);
+                        if (side==9) restart.setVisibility(View.VISIBLE);
                         backs.setVisibility(GONE);
 
-                        uploadInfo();
+                   //     uploadInfo();
                         getStatus();
                     }
                     removeMarkers();
@@ -2773,9 +3049,14 @@ double lat=Double.parseDouble(Utils.getLat(location));
         }
     }
     AlertDialog changesidedialog;
-    private void showChangeSideDialog(String snippet, String title, int id)
+    private void showChangeSideDialog( Marker marker, String title, int id)
     {
-
+        Date currentDate = new Date();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String dateText = dateFormat.format(currentDate);
+        DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        String timeText = timeFormat.format(currentDate);
+        String thisnickname=mSettings.getString(APP_NICKNAME,"");
         AlertDialog.Builder alert;
 
         if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP)
@@ -2786,22 +3067,29 @@ double lat=Double.parseDouble(Utils.getLat(location));
         {
             alert=new AlertDialog.Builder(this);
         }
-        Button yellow,blue,neutral,dismiss;
+        Button yellow,blue,union,neutral, dismiss;
         LayoutInflater inflater = getLayoutInflater();
         View view = inflater.inflate(R.layout.changesidedialog,null);
         yellow=view.findViewById(R.id.yellow);
         blue=view.findViewById(R.id.blue);
-        neutral=view.findViewById(R.id.neutral);
+        union=view.findViewById(R.id.neutral);
+        neutral=view.findViewById(R.id.doneutral);
         dismiss = view.findViewById(R.id.dismiss);
-
-
-
-
         mess=view.findViewById(R.id.mess);
         alert.setView(view);
         alert.setCancelable(false);
         mess.setText("Укажите принадлежность точки "+"\""+title+"\"");
         changesidedialog = alert.create();
+        String color=""+marker.getTag();
+        Log.d("TAG", ""+color);
+
+        if (color.equals("black")) {neutral.setAlpha(0.5f);neutral.setEnabled(false);}
+        if (color.equals("yellow")) {yellow.setAlpha(0.5f);yellow.setEnabled(false);}
+        if (color.equals("blue")) {blue.setAlpha(0.5f);blue.setEnabled(false);}
+        if (color.equals("grey")) {union.setAlpha(0.5f);union.setEnabled(false);}
+
+
+
 
         dismiss.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -2813,15 +3101,16 @@ double lat=Double.parseDouble(Utils.getLat(location));
         yellow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Date currentDate = new Date();
-                DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                String dateText = dateFormat.format(currentDate);
-                DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-                String timeText = timeFormat.format(currentDate);
+
+                if (title.contains("Точка"))
+                marker.setIcon(getBitmapHighDescriptor(R.drawable.yellowicon));
+                if (title.contains("База"))
+                    marker.setIcon(getBitmapHighDescriptor(R.drawable.yellowstar));
 
 
 
-              //  String toSend=timeText+", "+snippet+" point captured by YELLOW side";
+
+                //  String toSend=timeText+", "+snippet+" point captured by YELLOW side";
 //                try {
 //                    sendMessage(toSend);
 //                } catch (IOException e) {
@@ -2829,17 +3118,23 @@ double lat=Double.parseDouble(Utils.getLat(location));
 //                }
                 new uploadAsyncTask().execute("update_owner","1", title,""+id,"");
                 changesidedialog.dismiss();
+showDialog(title+" перешла под контроль Единства");
+                String value="";
+                updateGameLog("Организатор",title,""+id,"9", "100",thisnickname);
+//                value = value + "('" + "Организатор" + "','" + title + "','" + id + "','"
+//                        + dateText + "','" + timeText
+//                        + "','" + "9" + "','" + "100" + "','" + thisnickname + "','"+ "10"+"'),";
+//                new UpdateAsyncTask().execute(removeLastChar(value));
+
             }
         });
         blue.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Date currentDate = new Date();
-                DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                String dateText = dateFormat.format(currentDate);
-                DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-                String timeText = timeFormat.format(currentDate);
-
+                if (title.contains("Точка"))
+                    marker.setIcon(getBitmapHighDescriptor(R.drawable.blueicon));
+                if (title.contains("База"))
+                    marker.setIcon(getBitmapHighDescriptor(R.drawable.bluestar));
 //                String toSend=timeText+", "+snippet+" point captured by BLUE side";
 //                try {
 //                    sendMessage(toSend);
@@ -2852,17 +3147,20 @@ double lat=Double.parseDouble(Utils.getLat(location));
 //                String add=timeText+"#"+title+"#Коалицией"+"#Коалиция";
 //                new addInfoAsyncTask().execute(add);
                 changesidedialog.dismiss();
+                showDialog(title+" перешла под контроль Коалиции");
+                String value="";
+                updateGameLog("Организатор",title,""+id,"9", "200",thisnickname);
+
+
             }
         });
-        neutral.setOnClickListener(new View.OnClickListener() {
+        union.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Date currentDate = new Date();
-                DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                String dateText = dateFormat.format(currentDate);
-                DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-                String timeText = timeFormat.format(currentDate);
-
+                if (title.contains("Точка"))
+                    marker.setIcon(getBitmapHighDescriptor(R.drawable.greyicon));
+                if (title.contains("База"))
+                    marker.setIcon(getBitmapHighDescriptor(R.drawable.greystar));
 //                String toSend=timeText+", "+snippet+" point is NEUTRAL";
 //                try {
 //                    sendMessage(toSend);
@@ -2870,17 +3168,79 @@ double lat=Double.parseDouble(Utils.getLat(location));
 //                    e.printStackTrace();
 //                }
                 new uploadAsyncTask().execute("update_owner","3", title,""+id,"");
-
-//                String add=timeText+"#"+title+"#НЕЙТРАЛАМИ"+"#НЕЙТРАЛЬНАЯ";
-//
-//                new addInfoAsyncTask().execute(add);
                 changesidedialog.dismiss();
+                showDialog(title+" перешла под контроль Союза");
+
+                String value="";
+                updateGameLog("Организатор",title,""+id,"9", "300",thisnickname);
+
+
             }
         });
-
-
         changesidedialog.show();
+
+        neutral.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d("NeutralID", ""+id);
+                if (id<=23) {
+                    marker.setIcon(getBitmapHighDescriptor(R.drawable.blackicon));
+                    Log.d("Neutral", "icon");
+                }
+                if (id>23) {
+                    marker.setIcon(getBitmapHighDescriptor(R.drawable.blackstar));
+                    Log.d("Neutral", "star");
+                }
+
+
+
+                //  String toSend=timeText+", "+snippet+" point captured by YELLOW side";
+//                try {
+//                    sendMessage(toSend);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+                new uploadAsyncTask().execute("update_owner","0", title,""+id,"");
+                changesidedialog.dismiss();
+                showDialog(title+" нейтральная");
+                String value="";
+                updateGameLog("Организатор",title,""+id,"9", "400",thisnickname);
+
+
+            }
+        });
     }
+
+
+    public void idCheck()
+    {
+        String idcheck=mSettings.getString(APP_PREFERENCES_ID,"");
+        String gencheck=mSettings.getString(APP_PREFERENCES_GENERAL,"");
+        String nick=mSettings.getString(APP_NICKNAME,"");
+        int side= Integer.parseInt(mSettings.getString(APP_PREFERENCES_SIDE,"0"));
+        System.out.println("General is "+side +", "+nick+", "+gencheck+", "+idcheck);
+        if (idcheck!="") {
+            startRL.setVisibility(GONE);
+            genname.setText(nick.toUpperCase() + ", " + gencheck);
+            mapview.setVisibility(View.VISIBLE);
+            toppanel.setVisibility(View.VISIBLE);
+            if (side<9) QR.setVisibility(View.VISIBLE);
+            if (side==9) restart.setVisibility(View.VISIBLE);
+            backs.setVisibility(GONE);
+        }
+
+    }
+
+    public void updateGameLog (String general,String title, String id, String side,
+                               String genID,String thisnickname)
+    {
+
+        String value = "('" + general + "','" + title + "','" + id + "',"
+                + "CURDATE()" + "," + "CURTIME()"
+                + ",'" + side + "','" + genID + "','" + thisnickname + "','"+ "10"+"'),";
+new UpdateAsyncTask().execute(removeLastChar(value));
+    }
+
 
 
 }

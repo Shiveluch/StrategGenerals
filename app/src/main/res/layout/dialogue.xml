@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@drawable/yashik">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,10 +15,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:fontFamily="@font/font2"
             android:gravity="center"
-            android:text="TextView"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp" />
+            android:shadowColor="#000000"
+            android:shadowDx="0.1"
+            android:shadowDy="0.1"
+            android:shadowRadius="00.1"
+            android:text="TEXT"
+            android:textColor="#000000"
+            android:textSize="24sp" />
 
         <Button
             android:id="@+id/approve"
@@ -25,6 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="20dp"
+            android:fontFamily="@font/font2"
             android:text="OK"
             app:backgroundTint="#5C5C5C" />
     </LinearLayout>

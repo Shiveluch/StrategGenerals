@@ -21,7 +21,7 @@
     <string name="ok">OK</string>
     <string name="request_location_updates">Определение местоположения</string>
     <string name="remove_location_updates">Остановить определение местоположения</string>
-    <string name="control">1.04</string>
+    <string name="control">1.05</string>
 
     <string name="location_updated">Определено: %1$s</string>
 </resources>

@@ -4,7 +4,11 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/projects/StrategGenerals2/app/src/main/res/layout/activity_login.xml" value="0.33" />
-        <entry key="..\:/projects/StrategGenerals2/app/src/main/res/layout/changesidedialog.xml" value="0.33" />
+        <entry key="..\:/projects/StrategGenerals2/app/src/main/res/layout/changesidedialog.xml" value="0.2" />
+        <entry key="..\:/projects/StrategGenerals2/app/src/main/res/layout/dialogue.xml" value="0.2013479359730413" />
+        <entry key="..\:/projects/StrategGenerals2/app/src/main/res/layout/infodialog.xml" value="0.10643115942028986" />
+        <entry key="..\:/projects/StrategGenerals2/app/src/main/res/layout/orgresetdialog.xml" value="0.2" />
+        <entry key="..\:/projects/StrategGenerals2/app/src/main/res/layout/reset_dalogue.xml" value="0.1" />
       </map>
     </option>
   </component>
